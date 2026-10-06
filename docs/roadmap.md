@@ -90,7 +90,7 @@ Checklist de trabajo. `[x]` = hecho, `[ ]` = pendiente.
 
 ## Pendiente
 
-- [ ] UI: edición de capital/acciones y suscripciones en vivo (hoy hay que refrescar)
+- [~] UI: edición de capital/acciones (la **vista en vivo** ya está por SSE; falta editar)
 - [ ] Mercado con libro de órdenes real (hoy el precio lo fija una fórmula)
 - [ ] Inflación, tasas y banco central (el PIB es nominal)
 - [ ] Leyes que afecten el PIB y los recursos (hoy afectan sueldos, propiedades y IA)
@@ -110,3 +110,23 @@ Checklist de trabajo. `[x]` = hecho, `[ ]` = pendiente.
 - [x] Persistencia en **SQLite** con semilla para `reiniciar`
 - [x] UI: pestañas Economía, Mercado y Recursos (con sparklines propias)
 - [x] `serve` sirve la UI y la API en el mismo puerto
+
+## Simulación en vivo y modelo realista (issues #21+)
+
+Plan completo y dependencias: [issues.md](./issues.md).
+
+### Épica A — Simulación en tiempo real
+
+- [x] Reloj en el servidor con play/pausa, velocidad y períodos/tick (`server/reloj.ts`)
+- [x] Bus de eventos + stream SSE `GET /api/stream` (`server/eventos.ts`, `server/app.ts`)
+- [x] UI en vivo: barra de control + `EventSource` que actualiza el mundo sin refrescar
+- [x] Predicción por simulación aislada (`services/prediccion.ts`, query `predecir`)
+- [x] Tests de predicción y del bus de eventos (`tests/prediccion.test.ts`)
+
+### Épicas B–F — Modelo realista (pendiente)
+
+- [ ] B — Empresa: sector, objetivo, empleados productivos y productividad combinada
+- [ ] C — IA: catálogo de modelos con curva, adopción y AIs rogue
+- [ ] D — Empresas estatales y provisión de recursos
+- [ ] E — Clientes, cuota de mercado y beneficio
+- [ ] F — Exposición GraphQL, persistencia, UI y docs del modelo ampliado

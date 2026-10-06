@@ -14,11 +14,18 @@ import {
   listaEmpresas,
   mercadoDto,
   mundoDto,
+  prediccionDto,
   reiniciar,
   toggleLey,
   type NuevoAgente,
   type NuevoEmpleado,
 } from "./mundo";
+import {
+  ajustar as ajustarSimulacion,
+  estado as estadoSimulacion,
+  iniciar as iniciarSimulacion,
+  pausar as pausarSimulacion,
+} from "./reloj";
 
 const typeDefs = /* GraphQL */ `
   type Ley {
@@ -150,6 +157,22 @@ const typeDefs = /* GraphQL */ `
     indiceMercado: Float!
   }
 
+  type EstadoSimulacion {
+    corriendo: Boolean!
+    intervaloMs: Int!
+    periodosPorTick: Int!
+    ticks: Int!
+  }
+
+  type Prediccion {
+    periodos: Int!
+    periodoInicial: Int!
+    puntos: [PuntoEconomico!]!
+    pibFinal: Float!
+    productividadFinal: Float!
+    indiceFinal: Float!
+  }
+
   type Economia {
     periodo: Int!
     pibGlobal: Float!
@@ -259,6 +282,8 @@ const typeDefs = /* GraphQL */ `
     ais: [AI!]!
     nomina: Nomina!
     propiedades: [Propiedad!]!
+    estadoSimulacion: EstadoSimulacion!
+    predecir(periodos: Int): Prediccion!
   }
 
   type Mutation {
@@ -270,6 +295,9 @@ const typeDefs = /* GraphQL */ `
     crearAgente(input: NuevoAgenteInput): Resultado!
     comprarPropiedad(id: ID!): Resultado!
     reiniciar: Mundo!
+    iniciarSimulacion(intervaloMs: Int, periodosPorTick: Int): EstadoSimulacion!
+    pausarSimulacion: EstadoSimulacion!
+    ajustarSimulacion(intervaloMs: Int, periodosPorTick: Int): EstadoSimulacion!
   }
 `;
 
@@ -288,6 +316,8 @@ const resolvers = {
     ais: () => mundoDto().ais,
     nomina: () => mundoDto().nomina,
     propiedades: () => mundoDto().propiedades,
+    estadoSimulacion: () => estadoSimulacion(),
+    predecir: (_raiz: unknown, args: { periodos?: number }) => prediccionDto(args.periodos ?? 12),
   },
 
   Mutation: {
@@ -343,6 +373,14 @@ const resolvers = {
       reiniciar();
       return mundoDto();
     },
+
+    iniciarSimulacion: (_raiz: unknown, args: { intervaloMs?: number; periodosPorTick?: number }) =>
+      iniciarSimulacion(args.intervaloMs, args.periodosPorTick),
+
+    pausarSimulacion: () => pausarSimulacion(),
+
+    ajustarSimulacion: (_raiz: unknown, args: { intervaloMs?: number; periodosPorTick?: number }) =>
+      ajustarSimulacion(args.intervaloMs, args.periodosPorTick),
   },
 };
 

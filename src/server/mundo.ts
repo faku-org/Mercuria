@@ -26,7 +26,9 @@ import nacionesBase from "../fixtures/nacionesBase";
 import propiedadesBase, { anaDuenia } from "../fixtures/propiedadesBase";
 import { resumenLeyes } from "../services/leyes";
 import { calcularNomina, totalNomina, totalNominaFinal } from "../services/nomina";
+import { predecir } from "../services/prediccion";
 import { avanzarPeriodos as correrPeriodos } from "../services/simulacion";
+import { publicar } from "./eventos";
 import {
   cargarEstado,
   cargarSemilla,
@@ -481,9 +483,10 @@ function aplicarEstado(estado: EstadoPersistible): void {
   economia.historico = estado.puntos.map((punto) => ({ ...punto }));
 }
 
-/** Guarda el estado variable en SQLite. */
+/** Guarda el estado variable en SQLite y avisa a los clientes en vivo. */
 function persistir(): void {
   guardarEstado(capturarEstado());
+  publicar();
 }
 
 // Arranque: si hay estado guardado se carga; si no, se siembra la simulación y
@@ -581,11 +584,41 @@ function crearAgente(datos: NuevoAgente): Agente {
   return agente;
 }
 
-/** Corre N períodos de simulación. */
-function avanzar(periodos: number = 1): ReturnType<typeof economiaDto> {
+/**
+ * Corre N períodos de simulación. Con `guardar = false` (usado por el reloj en
+ * vivo) no escribe en SQLite, pero sí publica el cambio para los clientes.
+ */
+function avanzar(periodos: number = 1, guardar: boolean = true): ReturnType<typeof economiaDto> {
   correrPeriodos({ economia, empresas: mundoEmpresas, mercado }, periodos);
-  persistir();
+  if (guardar) {
+    persistir();
+  } else {
+    publicar();
+  }
   return economiaDto();
+}
+
+/** Fuerza el guardado del estado (lo usa el reloj para no escribir cada tick). */
+function persistirMundo(): void {
+  persistir();
+}
+
+/**
+ * Proyecta la economía `periodos` hacia adelante sobre una copia aislada del
+ * mundo (ver `services/prediccion.ts`). No altera el estado real.
+ */
+function prediccionDto(periodos: number) {
+  const cantidad = Math.max(0, Math.min(240, Math.floor(periodos)));
+  const puntos = predecir({ economia, empresas: mundoEmpresas, mercado }, cantidad);
+  const ultimo = puntos[puntos.length - 1];
+  return {
+    periodos: cantidad,
+    periodoInicial: economia.periodo,
+    puntos,
+    pibFinal: ultimo?.pib ?? economia.pibGlobal,
+    productividadFinal: ultimo?.productividadGlobal ?? economia.productividadGlobal,
+    indiceFinal: ultimo?.indiceMercado ?? mercado.indice(),
+  };
 }
 
 /** Fija la productividad de una empresa por nombre. */
@@ -625,6 +658,7 @@ function reiniciar(): void {
   if (!semilla) return;
   aplicarEstado(semilla);
   guardarEstado(semilla);
+  publicar();
 }
 
 export {
@@ -640,6 +674,8 @@ export {
   listaEmpresas,
   mercadoDto,
   mundoDto,
+  persistirMundo,
+  prediccionDto,
   reiniciar,
   toggleLey,
   type NuevoAgente,

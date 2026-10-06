@@ -1,4 +1,4 @@
-import type { Mercado, Mundo, Resultado } from "./types";
+import type { EstadoSimulacion, Mercado, Mundo, Prediccion, Resultado } from "./types";
 
 const ENDPOINT = "/graphql";
 
@@ -135,4 +135,77 @@ export async function comprarPropiedad(id: string): Promise<Resultado> {
 
 export async function reiniciar(): Promise<void> {
   await gql(`mutation { reiniciar { generado } }`);
+}
+
+// --- Simulación en vivo -------------------------------------------------------
+
+const CAMPOS_SIMULACION = "corriendo intervaloMs periodosPorTick ticks";
+
+export async function getEstadoSimulacion(): Promise<EstadoSimulacion> {
+  const data = await gql<{ estadoSimulacion: EstadoSimulacion }>(
+    `query { estadoSimulacion { ${CAMPOS_SIMULACION} } }`,
+  );
+  return data.estadoSimulacion;
+}
+
+export async function iniciarSimulacion(
+  intervaloMs?: number,
+  periodosPorTick?: number,
+): Promise<EstadoSimulacion> {
+  const data = await gql<{ iniciarSimulacion: EstadoSimulacion }>(
+    `mutation ($intervaloMs: Int, $periodosPorTick: Int) {
+      iniciarSimulacion(intervaloMs: $intervaloMs, periodosPorTick: $periodosPorTick) { ${CAMPOS_SIMULACION} }
+    }`,
+    { intervaloMs, periodosPorTick },
+  );
+  return data.iniciarSimulacion;
+}
+
+export async function pausarSimulacion(): Promise<EstadoSimulacion> {
+  const data = await gql<{ pausarSimulacion: EstadoSimulacion }>(
+    `mutation { pausarSimulacion { ${CAMPOS_SIMULACION} } }`,
+  );
+  return data.pausarSimulacion;
+}
+
+export async function ajustarSimulacion(
+  intervaloMs?: number,
+  periodosPorTick?: number,
+): Promise<EstadoSimulacion> {
+  const data = await gql<{ ajustarSimulacion: EstadoSimulacion }>(
+    `mutation ($intervaloMs: Int, $periodosPorTick: Int) {
+      ajustarSimulacion(intervaloMs: $intervaloMs, periodosPorTick: $periodosPorTick) { ${CAMPOS_SIMULACION} }
+    }`,
+    { intervaloMs, periodosPorTick },
+  );
+  return data.ajustarSimulacion;
+}
+
+export async function getPrediccion(periodos: number): Promise<Prediccion> {
+  const data = await gql<{ predecir: Prediccion }>(
+    `query ($periodos: Int) {
+      predecir(periodos: $periodos) {
+        periodos periodoInicial pibFinal productividadFinal indiceFinal
+        puntos { periodo pib productividadGlobal contaminacion indiceMercado }
+      }
+    }`,
+    { periodos },
+  );
+  return data.predecir;
+}
+
+/**
+ * Abre el stream SSE del mundo y llama a `onMundo` con cada snapshot. Devuelve
+ * la función para cerrar la conexión.
+ */
+export function suscribirMundo(onMundo: (mundo: Mundo) => void): () => void {
+  const fuente = new EventSource("/api/stream");
+  fuente.onmessage = (evento) => {
+    try {
+      onMundo(JSON.parse(evento.data) as Mundo);
+    } catch {
+      // Snapshot inválido: se ignora y se espera el próximo.
+    }
+  };
+  return () => fuente.close();
 }

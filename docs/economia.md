@@ -154,6 +154,23 @@ interface PuntoEconomico {
 }
 ```
 
+## Simulación en vivo
+
+`avanzarPeriodo` es el mismo ciclo de arriba, pero un **reloj en el servidor**
+(`src/server/reloj.ts`) puede correrlo solo: play/pausa, velocidad (intervalo entre ticks) y
+períodos por tick. El reloj no escribe SQLite en cada cuadro (persiste cada 20 ticks y al
+pausar); sí publica cada cambio en el bus de eventos (`src/server/eventos.ts`), que alimenta
+el stream **SSE** `GET /api/stream`. De ahí que todos los clientes vean el mismo mundo en
+vivo, sin refrescar y sin depender de un intervalo del navegador.
+
+## Predicción (simulación aislada)
+
+`predecir(periodos)` (`src/services/prediccion.ts`) **clona** recursos, ambiente, empresas y
+mercado, y corre `avanzarPeriodos` sobre la copia. Devuelve las muestras `PuntoEconomico`
+proyectadas sin tocar el estado real (período, histórico, productividades y cotizaciones
+reales quedan intactos). Es una proyección determinista del modelo actual: sirve para ver a
+dónde lleva la configuración vigente, no para anticipar shocks exógenos.
+
 ## Superficie GraphQL
 
 La API es **GraphQL** (graphql-yoga sobre Elysia, endpoint `/graphql`, GraphiQL activo).
@@ -167,6 +184,8 @@ Queries principales:
 | `mercado`  | Cotizaciones y capitalizaciones.                                 |
 | `recursos` | Recursos con disponibilidad y precio.                            |
 | `empresas` | Empresas con productividad, aporte al PIB y subsidiarias.        |
+| `estadoSimulacion` | Reloj en vivo (play/pausa, velocidad, ticks).            |
+| `predecir(periodos)` | Proyección aislada del sistema.                        |
 
 Mutations principales:
 
@@ -178,6 +197,9 @@ Mutations principales:
 | `toggleLey(id: String!)`                                | Activa/desactiva una ley.             |
 | `crearEmpleado(input)` / `crearAgente(input)`           | Altas.                                |
 | `comprarPropiedad(id: String!)`                         | La empresa compra una propiedad.      |
+| `iniciarSimulacion(intervaloMs, periodosPorTick)`       | Arranca el reloj en vivo.             |
+| `pausarSimulacion`                                      | Pausa el reloj.                       |
+| `ajustarSimulacion(intervaloMs, periodosPorTick)`       | Cambia la velocidad.                  |
 | `reiniciar`                                             | Restaura el mundo inicial.            |
 
 ## Persistencia (SQLite)

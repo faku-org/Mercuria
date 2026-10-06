@@ -17,9 +17,9 @@ TailwindCSS v4) para explorar el dominio en el navegador.
 polimorfismo/
 ├── src/                 Backend / dominio
 │   ├── domain/          Clases del modelo (Empleado, Nacion, Ley, Propiedad, AI, ...)
-│   ├── services/        Casos de uso (nomina.ts, leyes.ts, naciones.ts)
+│   ├── services/        Casos de uso (nomina.ts, leyes.ts, naciones.ts, prediccion.ts)
 │   ├── fixtures/        Datos de prueba (leyesBase, empleadosBase, aiBase, ...)
-│   ├── server/          API HTTP (Elysia): app.ts, mundo.ts, index.ts
+│   ├── server/          API HTTP (Elysia): app.ts, mundo.ts, schema.ts, reloj.ts, eventos.ts, db.ts
 │   ├── cli.ts           CLI interactiva de nómina
 │   ├── index.ts         Punto de entrada de la CLI
 │   └── debug.ts         Espacio para pruebas manuales
@@ -81,8 +81,9 @@ Detalle del modelo económico en [docs/economia.md](docs/economia.md).
 | [docs/organizacion.md](docs/organizacion.md) | Carpetas, capas y reglas de dependencia.                              |
 | [docs/convenciones.md](docs/convenciones.md) | Nombres, exports y cómo agregar un módulo.                            |
 | [docs/dominio.md](docs/dominio.md)           | Clases del dominio y su estado.                                       |
-| [docs/economia.md](docs/economia.md)         | Modelo económico: productividad, PIB, mercado, recursos y simulación. |
-| [docs/api-y-ui.md](docs/api-y-ui.md)         | GraphQL, vistas de la UI y persistencia.                              |
+| [docs/economia.md](docs/economia.md)         | Modelo económico, simulación en vivo y predicción.                    |
+| [docs/api-y-ui.md](docs/api-y-ui.md)         | GraphQL, SSE en vivo, predicción, vistas de la UI y persistencia.     |
+| [docs/issues.md](docs/issues.md)             | Tablero de issues (simulación en vivo y modelo realista).             |
 | [docs/roadmap.md](docs/roadmap.md)           | Checklist de mínimos, extras y pendientes.                            |
 
 ## Estado
@@ -90,5 +91,8 @@ Detalle del modelo económico en [docs/economia.md](docs/economia.md).
 - **Listo**: requisitos mínimos; extras (leyes con efecto/alcance, prioridad estado,
   propiedades con compra/venta, jerarquía de empresa, IA con agentes); **modelo económico**
   (productividad, PIB global, mercado de acciones, adquisiciones, recursos y ambiente);
-  tests del dominio; API **GraphQL**; UI web; persistencia en **SQLite**.
-- **Pendiente**: ver [docs/roadmap.md](docs/roadmap.md).
+  tests del dominio; API **GraphQL**; UI web; persistencia en **SQLite**; **simulación en
+  tiempo real** (reloj en el servidor + stream SSE + barra de control en la UI) y
+  **predicción** por simulación aislada.
+- **Pendiente**: modelo realista (sector, objetivo, IA, estatales, clientes). Ver
+  [docs/issues.md](docs/issues.md) y [docs/roadmap.md](docs/roadmap.md).

@@ -191,6 +191,22 @@ export interface Resultado {
   costo?: number | null;
 }
 
+export interface EstadoSimulacion {
+  corriendo: boolean;
+  intervaloMs: number;
+  periodosPorTick: number;
+  ticks: number;
+}
+
+export interface Prediccion {
+  periodos: number;
+  periodoInicial: number;
+  puntos: PuntoEconomico[];
+  pibFinal: number;
+  productividadFinal: number;
+  indiceFinal: number;
+}
+
 export interface Mundo {
   naciones: Nacion[];
   estados: Estado[];

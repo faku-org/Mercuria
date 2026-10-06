@@ -182,12 +182,26 @@ sumó `escalar()`.
 | `resumenLeyes(leyes)`                         | `leyes.ts`    | Cantidad y factor total por objetivo.                    |
 | `listarNaciones(naciones)`                    | `naciones.ts` | Imprime por consola y devuelve las naciones.             |
 | `obtenerNaciones(naciones)`                   | `naciones.ts` | Versión que delega en `listarNaciones`.                  |
+| `predecir(mundo, periodos)`                   | `prediccion.ts` | Proyección aislada: clona el mundo y corre N períodos. |
+| `clonarMundo(mundo)`                          | `prediccion.ts` | Copia independiente de economía, empresas y mercado.  |
 
 ## CLI — `src/cli.ts`
 
 CLI interactiva (`bun run start`): cargar la nómina de ejemplo, crear empleados (fijo, por
 hora o vendedor), ver la nómina (con leyes), vaciarla y ver la empresa demo. Con `--demo`
 (`bun run demo`) imprime la nómina de ejemplo sin interacción.
+
+## Servidor — `src/server/`
+
+| Módulo       | Rol                                                                             |
+| ------------ | ------------------------------------------------------------------------------- |
+| `index.ts`   | Arranque del servidor (`listen`).                                               |
+| `app.ts`     | Rutas: GraphQL (`/graphql`), salud (`/api/salud`) y stream SSE (`/api/stream`). |
+| `schema.ts`  | Esquema GraphQL (typeDefs + resolvers).                                         |
+| `mundo.ts`   | Estado del mundo, DTOs y acciones; publica cambios al bus.                      |
+| `db.ts`      | Persistencia SQLite (`bun:sqlite`).                                             |
+| `reloj.ts`   | Reloj en vivo: play/pausa, velocidad, períodos/tick.                            |
+| `eventos.ts` | Bus de eventos (`suscribir` / `publicar`) que alimenta el SSE.                  |
 
 ## Datos de prueba — `src/fixtures/`
 

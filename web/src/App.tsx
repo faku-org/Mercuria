@@ -14,7 +14,8 @@ import {
   Wallet,
 } from "lucide-react";
 import * as api from "./api";
-import type { Mundo } from "./types";
+import type { EstadoSimulacion, Mundo } from "./types";
+import { BarraSimulacion } from "./components/BarraSimulacion";
 import { Button } from "./components/ui";
 import { AIView } from "./views/AI";
 import { EconomiaView } from "./views/Economia";
@@ -99,6 +100,8 @@ export default function App() {
   const [pestana, setPestana] = useState<PestanaId>("economia");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [sim, setSim] = useState<EstadoSimulacion | null>(null);
+  const [ocupadoSim, setOcupadoSim] = useState(false);
 
   const recargar = useCallback(async () => {
     setCargando(true);
@@ -115,6 +118,38 @@ export default function App() {
   useEffect(() => {
     void recargar();
   }, [recargar]);
+
+  const actualizarSim = useCallback(async () => {
+    try {
+      setSim(await api.getEstadoSimulacion());
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }, []);
+
+  useEffect(() => {
+    void actualizarSim();
+  }, [actualizarSim]);
+
+  // Stream en vivo: el servidor empuja el mundo en cada tick o mutación.
+  useEffect(() => {
+    return api.suscribirMundo((nuevo) => {
+      setMundo(nuevo);
+      setCargando(false);
+      setError(null);
+    });
+  }, []);
+
+  const controlarSim = useCallback(async (fn: () => Promise<EstadoSimulacion>) => {
+    setOcupadoSim(true);
+    try {
+      setSim(await fn());
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setOcupadoSim(false);
+    }
+  }, []);
 
   const accion = useCallback(
     async (fn: () => Promise<unknown>) => {
@@ -174,6 +209,20 @@ export default function App() {
             Actualizar
           </Button>
         </header>
+
+        <div className="mb-4">
+          <BarraSimulacion
+            estado={sim}
+            ocupado={ocupadoSim}
+            onIniciar={(intervaloMs, periodosPorTick) =>
+              void controlarSim(() => api.iniciarSimulacion(intervaloMs, periodosPorTick))
+            }
+            onPausar={() => void controlarSim(() => api.pausarSimulacion())}
+            onAjustar={(intervaloMs, periodosPorTick) =>
+              void controlarSim(() => api.ajustarSimulacion(intervaloMs, periodosPorTick))
+            }
+          />
+        </div>
 
         <div className="sticky top-0 z-10 -mx-6 mb-4 flex gap-2 overflow-x-auto bg-canvas/95 px-6 py-2 backdrop-blur lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {PESTANAS.map(({ id, label }) => (
