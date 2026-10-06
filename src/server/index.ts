@@ -20,7 +20,7 @@ app.listen({ port: PORT, hostname: HOST, reusePort: false });
 // La economía avanza sola, haya o no clientes conectados.
 autostart();
 const reloj = estado();
-console.log(`Polimorfismo (GraphQL + UI) en http://${HOST}:${PORT}/`);
+console.log(`Mercuria (GraphQL + UI) en http://${HOST}:${PORT}/`);
 console.log(
   reloj.corriendo
     ? `Simulación autónoma activa: ${reloj.periodosPorTick} período(s) cada ${reloj.intervaloMs} ms.`

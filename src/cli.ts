@@ -112,7 +112,7 @@ function verEmpresaDemo(): void {
 }
 
 function iniciarCLI(): void {
-  console.log("=== Polimorfismo · Nómina ===");
+  console.log("=== Mercuria · Nómina ===");
 
   let salir = false;
   while (!salir) {
@@ -163,7 +163,7 @@ function obtenerArgv(): string[] {
 
 function main(): void {
   if (obtenerArgv().includes("--demo")) {
-    console.log("=== Polimorfismo · Demo de nómina ===");
+    console.log("=== Mercuria · Demo de nómina ===");
     imprimirNomina(empleadosDemo, leyesGlobales, economiaDemo.productividadGlobal);
     return;
   }

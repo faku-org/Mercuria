@@ -104,7 +104,7 @@ export function crearApp() {
   const app = new Elysia()
     .use(cors())
     .onError(({ code, error }) => ({ error: (error as Error).message, code }))
-    .get("/api/salud", () => ({ ok: true, servicio: "polimorfismo-graphql", web: hayBuild }))
+    .get("/api/salud", () => ({ ok: true, servicio: "mercuria-graphql", web: hayBuild }))
     .get("/api/stream", ({ request }) => streamMundo(request.signal))
     .all("/graphql", ({ request }) => yoga.fetch(request));
 

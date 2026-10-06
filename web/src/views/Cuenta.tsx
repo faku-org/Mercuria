@@ -95,7 +95,7 @@ function FormularioAuth({ onSesion }: { onSesion: (usuario: UsuarioPerfil) => vo
             autoComplete="current-password"
           />
         </Campo>
-        {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="text-sm text-negative">{error}</p> : null}
         <div className="flex items-center justify-between gap-2">
           <Button type="submit" disabled={cargando}>
             {modo === "registro" ? <UserPlus size={15} /> : <LogIn size={15} />}
@@ -308,7 +308,7 @@ export function CuentaView({
         {aviso ? (
           <p className="mt-3 rounded-xl border border-line bg-canvas px-3 py-2 text-sm">{aviso}</p>
         ) : null}
-        {error ? <p className="mt-2 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="mt-2 text-sm text-negative">{error}</p> : null}
       </Card>
 
       <Card>

@@ -1,6 +1,6 @@
 # Documentación
 
-Índice de la documentación del proyecto **Polimorfismo**.
+Índice de la documentación del proyecto **Mercuria**.
 
 | Documento                            | Contenido                                                                                   |
 | ------------------------------------ | ------------------------------------------------------------------------------------------- |

@@ -4,6 +4,7 @@ import {
   Bot,
   Briefcase,
   Building2,
+  Coins,
   Droplets,
   Globe,
   LineChart,
@@ -17,6 +18,7 @@ import {
 import * as api from "./api";
 import type { EstadoSimulacion, Evento, Mundo, Resumen, UsuarioPerfil } from "./types";
 import { BarraSimulacion } from "./components/BarraSimulacion";
+import { BotonTema } from "./components/Tema";
 import { Button } from "./components/ui";
 import { AIView } from "./views/AI";
 import { CuentaView } from "./views/Cuenta";
@@ -251,13 +253,18 @@ export default function App() {
   const actual = PESTANAS.find((item) => item.id === pestana) ?? PESTANAS[0];
 
   return (
-    <div className="mx-auto flex min-h-full max-w-6xl gap-8 px-6 py-8">
+    <div className="mx-auto flex min-h-full max-w-7xl gap-8 px-6 py-8">
       <aside className="hidden w-56 shrink-0 lg:block">
-        <div className="mb-6">
-          <p className="text-sm font-semibold">Polimorfismo</p>
-          <p className="text-xs text-muted">Simulación económica</p>
-          {usuario ? <p className="mt-1 text-xs text-accent">@{usuario.handle}</p> : null}
+        <div className="mb-6 flex items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-700 to-brand-300 text-on-accent shadow-sm">
+            <Coins size={18} />
+          </span>
+          <div>
+            <p className="font-display text-base font-bold tracking-tight">Mercuria</p>
+            <p className="text-xs text-muted">Simulación económica</p>
+          </div>
         </div>
+        {usuario ? <p className="mb-3 text-xs text-accent">@{usuario.handle}</p> : null}
         <nav className="space-y-1">
           {PESTANAS.map(({ id, label, Icono }) => (
             <button
@@ -285,15 +292,13 @@ export default function App() {
             <h1 className="text-xl font-semibold">{actual.titulo}</h1>
             <p className="mt-0.5 text-sm text-muted">{actual.desc}</p>
           </div>
-          <Button
-            variante="secundario"
-            onClick={() => void recargar()}
-            disabled={cargando}
-            className="self-start"
-          >
-            {cargando ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
-            Actualizar
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 self-start">
+            <BotonTema />
+            <Button variante="secundario" onClick={() => void recargar()} disabled={cargando}>
+              {cargando ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+              Actualizar
+            </Button>
+          </div>
         </header>
 
         <div className="mb-4">
@@ -326,7 +331,7 @@ export default function App() {
         </div>
 
         {error ? (
-          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="mb-4 rounded-xl border border-negative/30 bg-negative-soft px-4 py-3 text-sm text-negative">
             {error}
           </div>
         ) : null}

@@ -80,7 +80,7 @@ export function MercadoView({
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="tabular font-semibold">{formatearMoneda(cotizacion.precio)}</p>
-                    <p className={`tabular text-xs ${alza ? "text-emerald-600" : "text-rose-600"}`}>
+                    <p className={`tabular text-xs ${alza ? "text-positive" : "text-negative"}`}>
                       {alza ? "+" : ""}
                       {formatearNumero(cotizacion.variacion * 100, 2)}%
                     </p>
@@ -134,7 +134,7 @@ export function MercadoView({
                     </td>
                     <td className="tabular px-5 py-3 text-right">
                       <span
-                        className={`inline-flex items-center gap-1 ${alza ? "text-emerald-600" : "text-rose-600"}`}
+                        className={`inline-flex items-center gap-1 ${alza ? "text-positive" : "text-negative"}`}
                       >
                         {alza ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                         {formatearNumero(cotizacion.variacion * 100, 2)}%

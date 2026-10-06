@@ -50,7 +50,7 @@ export function BarraSimulacion({
     <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3">
       <Badge tono={corriendo ? "positivo" : "neutro"}>
         <span
-          className={`h-2 w-2 rounded-full ${corriendo ? "animate-pulse bg-emerald-500" : "bg-muted"}`}
+          className={`h-2 w-2 rounded-full ${corriendo ? "animate-pulse bg-positive" : "bg-muted"}`}
         />
         {corriendo ? "en vivo" : "pausado"}
       </Badge>

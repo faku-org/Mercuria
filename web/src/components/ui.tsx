@@ -48,8 +48,8 @@ type Tono = "neutro" | "positivo" | "negativo" | "acento";
 
 const TONOS: Record<Tono, string> = {
   neutro: "bg-canvas text-muted",
-  positivo: "bg-emerald-50 text-emerald-700",
-  negativo: "bg-rose-50 text-rose-700",
+  positivo: "bg-positive-soft text-positive",
+  negativo: "bg-negative-soft text-negative",
   acento: "bg-accent-soft text-accent",
 };
 
@@ -79,10 +79,10 @@ export function Button({
   className?: string;
 }) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas disabled:opacity-50 disabled:cursor-not-allowed";
   const estilos =
     variante === "primario"
-      ? "bg-accent text-white hover:opacity-90"
+      ? "bg-accent text-on-accent hover:opacity-90"
       : "border border-line bg-surface text-ink hover:bg-canvas";
   return (
     <button

@@ -97,7 +97,7 @@ function PanelPrediccion({ pibActual }: { pibActual: number }) {
         Predicción (simulación aislada)
       </Titulo>
 
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {error ? <p className="text-sm text-negative">{error}</p> : null}
 
       {pred ? (
         <div className="space-y-4">

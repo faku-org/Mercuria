@@ -11,7 +11,7 @@ import type {
 } from "./types";
 
 const ENDPOINT = "/graphql";
-const CLAVE_TOKEN = "polimorfismo.token";
+const CLAVE_TOKEN = "mercuria.token";
 
 interface RespuestaGraphQL<T> {
   data?: T;

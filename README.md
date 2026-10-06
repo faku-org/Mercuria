@@ -1,4 +1,4 @@
-# Polimorfismo
+# Mercuria
 
 > Ejercicio de Programación Orientada a Objetos en TypeScript: cálculo polimórfico de
 > sueldos de empleados, ampliado con naciones, estados, leyes, empresas, propiedades e IA.
@@ -14,7 +14,7 @@ TailwindCSS v4) para explorar el dominio en el navegador.
 ## Estructura
 
 ```
-polimorfismo/
+mercuria/
 ├── src/                 Backend / dominio
 │   ├── domain/          Clases del modelo (Empleado, Nacion, Ley, Propiedad, AI, ...)
 │   ├── services/        Casos de uso (nomina.ts, leyes.ts, naciones.ts, prediccion.ts)
