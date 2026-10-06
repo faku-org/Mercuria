@@ -24,9 +24,11 @@ env:
   SERVICIO: mercuria
   PUERTO: "3011" # el que consume nginx
   PUERTO_PRUEBA: "3012" # slot ocioso para probar el candidato
-  DB: /home/hermes/srv-data/polimorfismo/mundo.db
+  # Base del mundo en prod: vive fuera del release para que sobreviva a los deploys.
+  # El deploy NO la toca (el smoke test usa una descartable en $RUNNER_TEMP).
+  DB_PROD: /home/hermes/srv-data/polimorfismo/mundo.db
   BUN: /usr/local/bin/bun
-  SITIO: https://polimorfismo.eternum.lat
+  SITIO: https://mercuria.facupresa.com
 
 jobs:
   deploy:
@@ -87,7 +89,7 @@ jobs:
           PID=$!
           trap 'kill $PID 2>/dev/null || true' EXIT
 
-          for i in $(seq 1 20); do
+          for _ in $(seq 1 20); do
             if curl -fsS "http://127.0.0.1:$PUERTO_PRUEBA/api/salud" | grep -q '"web":true'; then
               echo "candidato OK: $(curl -fsS "http://127.0.0.1:$PUERTO_PRUEBA/api/salud")"
               exit 0
@@ -112,7 +114,7 @@ jobs:
         run: |
           set -euo pipefail
           arriba=0
-          for i in $(seq 1 15); do
+          for _ in $(seq 1 15); do
             if curl -fsS "http://127.0.0.1:$PUERTO/api/salud" | grep -q '"ok":true'; then
               arriba=1
               break
@@ -143,9 +145,10 @@ jobs:
           set -euo pipefail
           cd "$RAIZ/releases"
           ACTUAL="$(basename "$(readlink -f "$RAIZ/current")")"
-          for viejo in $(ls -1dt -- */ 2>/dev/null | sed 's#/##' | grep -vx "$ACTUAL" | tail -n +3); do
+          for viejo in $(find . -mindepth 1 -maxdepth 1 -type d -printf '%T@ %f\n' \
+            | sort -rn | awk '{print $2}' | grep -vx "$ACTUAL" | tail -n +3); do
             rm -rf -- "$viejo"
             echo "borrado $viejo"
           done
-          ls -1dt -- */ | sed 's#/##'
+          find . -mindepth 1 -maxdepth 1 -type d -printf '%f\n'
           du -sh "$RAIZ"

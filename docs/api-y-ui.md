@@ -173,14 +173,27 @@ propio (sin librería de charts). Estilo: paleta neutra con un solo acento
 
 ## Exposición
 
-El servicio corre como `polimorfismo.service` (systemd, loopback `127.0.0.1:3011`) y se
-expone **público** por nginx + Cloudflare:
+El servicio corre como `mercuria.service` (systemd, loopback `127.0.0.1:3011`) desde
+`/srv/mercuria/current` y se expone **público** por nginx + Cloudflare:
 
-- `https://polimorfismo.eternum.lat/` (UI) y `/graphql` (API).
-- Registro CF: `CNAME polimorfismo.eternum.lat → eternum.lat`, proxied.
-- Vhost: `~/deploy/nginx/polimorfismo.eternum.lat.conf` → `127.0.0.1:3011`, cert por
-  DNS-01 (`/etc/letsencrypt/live/polimorfismo.eternum.lat/`).
-- Base de datos del servicio: `/home/hermes/srv-data/polimorfismo/mundo.db`.
+- `https://mercuria.facupresa.com/` (UI) y `/graphql` (API).
+- Registro CF: `CNAME mercuria.facupresa.com → facupresa.com`, proxied.
+- Vhost: `~/deploy/nginx/mercuria.facupresa.com.conf` → `127.0.0.1:3011`, cert por
+  DNS-01 (`/etc/letsencrypt/live/mercuria.facupresa.com/`).
+- Base de datos del servicio: `/home/hermes/srv-data/polimorfismo/mundo.db`, fuera de los
+  releases para que sobreviva a los deploys.
+- `https://polimorfismo.eternum.lat/` sigue sirviendo lo mismo (URL vieja del TP).
+
+## Deploy
+
+`.github/workflows/deploy.yml`, en push a `main` (runner self-hosted de `faku-org`):
+
+1. `bun install` → `tsc` → `bun test` → `bun run web:build`.
+2. Release nuevo en `/srv/mercuria/releases/<sha>` (rsync + `bun install --production`).
+3. Smoke test del candidato en el slot ocioso `:3012`, con base descartable.
+4. Flip del symlink `/srv/mercuria/current` + `systemctl restart mercuria.service`.
+5. Verificación en `:3011`; si no responde, vuelve al release anterior.
+6. Poda de releases viejas (quedan el actual + 2).
 
 También queda un `tailscale serve` en `https://vps-660e4a8c.tail7f613b.ts.net:8445/`
 (tailnet only) como acceso interno.
