@@ -106,17 +106,27 @@ Stack: React 19 + Vite + TailwindCSS v4 + `lucide-react`. Gráficos: un `Sparkli
 propio (sin librería de charts). Estilo: paleta neutra con un solo acento
 (`--color-accent`), sin degradados.
 
-## Exposición (demo)
+## Exposición
 
 El servicio corre como `polimorfismo.service` (systemd, loopback `127.0.0.1:3011`) y se
-expone **solo por tailnet** con Tailscale Serve:
+expone **público** por nginx + Cloudflare:
 
-```bash
-sudo tailscale serve --bg --https=8445 http://127.0.0.1:3011
-# https://vps-660e4a8c.tail7f613b.ts.net:8445/
-```
+- `https://polimorfismo.eternum.lat/` (UI) y `/graphql` (API).
+- Registro CF: `CNAME polimorfismo.eternum.lat → eternum.lat`, proxied.
+- Vhost: `~/deploy/nginx/polimorfismo.eternum.lat.conf` → `127.0.0.1:3011`, cert por
+  DNS-01 (`/etc/letsencrypt/live/polimorfismo.eternum.lat/`).
+- Base de datos del servicio: `/home/hermes/srv-data/polimorfismo/mundo.db`.
 
-Base de datos del servicio: `/home/hermes/srv-data/polimorfismo/mundo.db`.
+También queda un `tailscale serve` en `https://vps-660e4a8c.tail7f613b.ts.net:8445/`
+(tailnet only) como acceso interno.
+
+> **Sin autenticación.** Cualquiera con la URL puede consumir la GraphQL, incluidas las
+> mutations. Es un TP con datos de prueba, pero si molesta se resuelve con Basic Auth en
+> el vhost.
+
+> Tailscale **Funnel** (público sin nginx) se probó y se descartó: el ingress
+> `ingress-nyc-01` de Tailscale devolvía "Broken pipe" en 3 de 4 verificaciones externas
+> (check-host desde Alemania, Indonesia y Singapur; solo Suecia dio 200).
 
 ## Ideas para seguir
 
