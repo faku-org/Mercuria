@@ -1,0 +1,151 @@
+name: Deploy
+
+# Push a main → build + deploy a producción en el VPS (runner self-hosted).
+#
+# Prod corre desde /srv/mercuria/current (symlink al release) bajo el servicio
+# mercuria.service en 127.0.0.1:3011, detrás de nginx. Cada push arma un release
+# nuevo, lo levanta en el slot ocioso (:3012) con una base descartable para el
+# smoke test real, y recién ahí mueve el symlink y reinicia. Si prod no
+# responde, vuelve al release anterior.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-mercuria
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  RAIZ: /srv/mercuria
+  SERVICIO: mercuria
+  PUERTO: "3011" # el que consume nginx
+  PUERTO_PRUEBA: "3012" # slot ocioso para probar el candidato
+  DB: /home/hermes/srv-data/polimorfismo/mundo.db
+  BUN: /usr/local/bin/bun
+  SITIO: https://polimorfismo.eternum.lat
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # El bun del sistema, el mismo del ExecStart del servicio: así lo que se
+      # construye acá es exactamente lo que corre en prod.
+      - name: Bun
+        run: $BUN --version
+
+      - name: Dependencias
+        run: $BUN install --frozen-lockfile
+
+      - name: Tipos
+        run: $BUN run check
+
+      - name: Tests
+        run: $BUN test
+
+      - name: Build web (web/dist)
+        run: $BUN run web:build
+
+      - name: Armar release
+        run: |
+          set -euo pipefail
+          REL="$RAIZ/releases/${GITHUB_SHA::7}"
+          rm -rf "$REL"
+          mkdir -p "$REL"
+
+          # -rltO: no intenta preservar dueño/grupo. El runner no es root y
+          # pisar dirs ya existentes con -a muere con EPERM.
+          rsync -rltO --delete \
+            --exclude '.git' --exclude 'node_modules' --exclude 'data' \
+            --exclude '*.db' --exclude '*.db-wal' --exclude '*.db-shm' \
+            ./ "$REL/"
+
+          # node_modules no viaja en el rsync: se instala en el release.
+          # web/dist sí viaja, ya viene buildeado del paso anterior.
+          cd "$REL" && $BUN install --frozen-lockfile --production
+
+          echo "REL=$REL" >> "$GITHUB_ENV"
+          echo "release ${GITHUB_SHA::7}: $(du -sh "$REL" | cut -f1)"
+
+      - name: Smoke test del candidato en :3012
+        run: |
+          set -euo pipefail
+          LOG="$RUNNER_TEMP/candidato.log"
+          DB_PRUEBA="$RUNNER_TEMP/smoke-${GITHUB_SHA::7}.db"
+          rm -f "$DB_PRUEBA"*
+
+          # Base y simulación descartables: el candidato no toca el mundo real.
+          PORT=$PUERTO_PRUEBA POLIMORFISMO_DB="$DB_PRUEBA" POLIMORFISMO_SIM_AUTOSTART=0 \
+            $BUN run "$REL/src/server/index.ts" > "$LOG" 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+
+          for i in $(seq 1 20); do
+            if curl -fsS "http://127.0.0.1:$PUERTO_PRUEBA/api/salud" | grep -q '"web":true'; then
+              echo "candidato OK: $(curl -fsS "http://127.0.0.1:$PUERTO_PRUEBA/api/salud")"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "::error::El candidato no levantó en :$PUERTO_PRUEBA"
+          cat "$LOG"
+          exit 1
+
+      - name: Mover el symlink y reiniciar el servicio
+        run: |
+          set -euo pipefail
+          ANTERIOR="$(readlink -f "$RAIZ/current" 2>/dev/null || true)"
+          echo "ANTERIOR=$ANTERIOR" >> "$GITHUB_ENV"
+          echo "current: ${ANTERIOR:-<vacío>} -> $REL"
+          ln -sfn "$REL" "$RAIZ/current"
+          sudo systemctl restart "$SERVICIO"
+
+      - name: Verificar prod (rollback si no levanta)
+        run: |
+          set -euo pipefail
+          arriba=0
+          for i in $(seq 1 15); do
+            if curl -fsS "http://127.0.0.1:$PUERTO/api/salud" | grep -q '"ok":true'; then
+              arriba=1
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$arriba" != 1 ]; then
+            echo "::error::Prod no respondió en :$PUERTO después del deploy"
+            sudo journalctl -u "$SERVICIO" -n 40 --no-pager || true
+            if [ -n "${ANTERIOR:-}" ] && [ -d "${ANTERIOR:-}" ]; then
+              echo "Volviendo a $ANTERIOR"
+              ln -sfn "$ANTERIOR" "$RAIZ/current"
+              sudo systemctl restart "$SERVICIO"
+              sleep 3
+              curl -fsS "http://127.0.0.1:$PUERTO/api/salud" && echo " · rollback OK"
+            fi
+            exit 1
+          fi
+
+          echo "prod: $(curl -fsS "http://127.0.0.1:$PUERTO/api/salud")"
+          curl -fsS -o /dev/null -w "público: %{http_code}\n" --max-time 15 "$SITIO/api/salud" \
+            || echo " · el sitio público no respondió (nginx/Cloudflare quedan fuera del deploy)"
+
+      # El release actual + los dos anteriores quedan para rollback a mano.
+      - name: Podar releases viejas
+        run: |
+          set -euo pipefail
+          cd "$RAIZ/releases"
+          ACTUAL="$(basename "$(readlink -f "$RAIZ/current")")"
+          for viejo in $(ls -1dt -- */ 2>/dev/null | sed 's#/##' | grep -vx "$ACTUAL" | tail -n +3); do
+            rm -rf -- "$viejo"
+            echo "borrado $viejo"
+          done
+          ls -1dt -- */ | sed 's#/##'
+          du -sh "$RAIZ"
