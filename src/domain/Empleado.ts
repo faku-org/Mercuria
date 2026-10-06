@@ -34,11 +34,12 @@ class Empleado extends Persona {
   }
 
   /**
-   * Sueldo final aplicando las leyes del lugar donde trabaja el empleado
-   * (nación/estado de su empresa) más las leyes globales vigentes.
+   * Sueldo final: base × (1 + leyes de su empresa y globales) × productividad global.
+   * El efecto de la productividad es global: la misma para todos los empleados.
    */
-  sueldoConLeyes(leyesGlobales: Ley[] = []): Sueldo {
-    return this.sueldoDetallado().conLeyes(this.empresa.factorLeyes("sueldo", leyesGlobales));
+  sueldoConLeyes(leyesGlobales: Ley[] = [], productividadGlobal: number = 1): Sueldo {
+    const factorLeyes = this.empresa.factorLeyes("sueldo", leyesGlobales);
+    return this.sueldoDetallado().conLeyes(factorLeyes).escalar(productividadGlobal);
   }
 }
 

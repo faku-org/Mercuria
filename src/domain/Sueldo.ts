@@ -17,6 +17,11 @@ class Sueldo {
     const monto = Number((this.monto * (1 + factor)).toFixed(2));
     return new Sueldo(monto, this.deduce, this.tipo);
   }
+
+  /** Escala el sueldo por un factor directo (1.2 = +20%). */
+  escalar(factor: number): Sueldo {
+    return new Sueldo(Number((this.monto * factor).toFixed(2)), this.deduce, this.tipo);
+  }
 }
 
 export { type TipoSueldo };

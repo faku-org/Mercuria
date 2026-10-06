@@ -150,6 +150,24 @@ Utilidades en `domain/identificadores.ts`:
 | Propiedad   | `<Nacion iniciales>-PROP-<id>`                       | `US-PROP-3f9a1c`          |
 | AI / Agente | `<Modelo iniciales>-<id>`                            | `CL-jel9nm`               |
 
+## Modelo económico
+
+Estas clases viven también en `domain/`; su interacción y fórmulas están documentadas en
+[economia.md](economia.md).
+
+| Clase      | Archivo              | Rol                                                                  |
+| ---------- | -------------------- | -------------------------------------------------------------------- |
+| `Recurso`  | `domain/Recurso.ts`  | Agua, electricidad, combustible, minerales: disponibilidad y precio. |
+| `Ambiente` | `domain/Ambiente.ts` | Contaminación, calidad de aire, temperatura, biodiversidad.          |
+| `Economia` | `domain/Economia.ts` | PIB global, productividad global, período e histórico.               |
+| `Accion`   | `domain/Accion.ts`   | Cotización: precio, acciones, capitalización, variación, índice.     |
+| `Mercado`  | `domain/Mercado.ts`  | Cotizaciones, índice, costo de adquisición y compra de empresas.     |
+
+Cambios en clases ya documentadas: `Empresa` sumó `productividad`, `capacidad`, `acciones`,
+`intensidadEmision`, `subsidiarias` y `controladaPor`; `AI` sumó `productividad` y
+`adquirir()`; `Empleado.sueldoConLeyes()` ahora recibe la productividad global; `Sueldo`
+sumó `escalar()`.
+
 ## Servicios — `src/services/`
 
 | Función                                       | Archivo       | Descripción                                              |

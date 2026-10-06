@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  Activity,
   Bot,
   Briefcase,
   Building2,
+  Droplets,
   Globe,
+  LineChart,
   Loader2,
   RefreshCw,
   RotateCcw,
@@ -14,19 +17,43 @@ import * as api from "./api";
 import type { Mundo } from "./types";
 import { Button } from "./components/ui";
 import { AIView } from "./views/AI";
+import { EconomiaView } from "./views/Economia";
 import { EmpresasView } from "./views/Empresas";
 import { LeyesView } from "./views/Leyes";
+import { MercadoView } from "./views/Mercado";
 import { NacionesView } from "./views/Naciones";
 import { NominaView } from "./views/Nomina";
 import { PropiedadesView } from "./views/Propiedades";
+import { RecursosView } from "./views/Recursos";
 
 const PESTANAS = [
+  {
+    id: "economia",
+    label: "Economía",
+    Icono: LineChart,
+    titulo: "Economía",
+    desc: "PIB global, productividad y simulación por períodos.",
+  },
+  {
+    id: "mercado",
+    label: "Mercado",
+    Icono: Activity,
+    titulo: "Mercado",
+    desc: "Cotizaciones, capitalización y adquisiciones entre empresas.",
+  },
+  {
+    id: "recursos",
+    label: "Recursos",
+    Icono: Droplets,
+    titulo: "Recursos y ambiente",
+    desc: "Agua, electricidad, combustible, minerales y contaminación.",
+  },
   {
     id: "nomina",
     label: "Nómina",
     Icono: Wallet,
     titulo: "Nómina",
-    desc: "Cálculo polimórfico de sueldos con leyes aplicadas.",
+    desc: "Cálculo polimórfico de sueldos con leyes y productividad global.",
   },
   {
     id: "naciones",
@@ -54,7 +81,7 @@ const PESTANAS = [
     label: "Empresas",
     Icono: Briefcase,
     titulo: "Empresas",
-    desc: "Capital, jerarquía, propiedades e IA.",
+    desc: "Capital, productividad, jerarquía, propiedades e IA.",
   },
   {
     id: "ai",
@@ -69,7 +96,7 @@ type PestanaId = (typeof PESTANAS)[number]["id"];
 
 export default function App() {
   const [mundo, setMundo] = useState<Mundo | null>(null);
-  const [pestana, setPestana] = useState<PestanaId>("nomina");
+  const [pestana, setPestana] = useState<PestanaId>("economia");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
 
@@ -108,7 +135,7 @@ export default function App() {
       <aside className="hidden w-56 shrink-0 lg:block">
         <div className="mb-6">
           <p className="text-sm font-semibold">Polimorfismo</p>
-          <p className="text-xs text-muted">Panel de dominio</p>
+          <p className="text-xs text-muted">Simulación económica</p>
         </div>
         <nav className="space-y-1">
           {PESTANAS.map(({ id, label, Icono }) => (
@@ -164,10 +191,17 @@ export default function App() {
           </div>
         ) : null}
 
-        {mundo === null ? (
+        {!mundo ? (
           <p className="text-sm text-muted">Cargando…</p>
         ) : (
           <>
+            {pestana === "economia" ? (
+              <EconomiaView economia={mundo.economia} empresas={mundo.empresas} accion={accion} />
+            ) : null}
+            {pestana === "mercado" ? (
+              <MercadoView mercado={mundo.mercado} empresas={mundo.empresas} accion={accion} />
+            ) : null}
+            {pestana === "recursos" ? <RecursosView economia={mundo.economia} /> : null}
             {pestana === "nomina" ? <NominaView nomina={mundo.nomina} accion={accion} /> : null}
             {pestana === "naciones" ? (
               <NacionesView naciones={mundo.naciones} estados={mundo.estados} />

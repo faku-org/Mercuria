@@ -10,6 +10,9 @@ import { nacionPrincipal } from "./nacionesBase";
 const empresaDemo = new Empresa("Empresa Demo", 1, [], 5_000_000, [], {
   nacion: nacionPrincipal,
   estado: california,
+  productividad: 1,
+  acciones: 50_000,
+  intensidadEmision: 0.5,
 });
 
 const ana = new EmpleadoFijo("Ana Fija", 1, empresaDemo);

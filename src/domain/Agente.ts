@@ -21,7 +21,7 @@ function costoModelo(modelo: string): number {
 class Agente extends AI {
   aiMatriz: AI;
   sector: string;
-  productividad: number;
+  override productividad: number;
 
   constructor(
     nombre: string,

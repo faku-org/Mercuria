@@ -90,7 +90,23 @@ Checklist de trabajo. `[x]` = hecho, `[ ]` = pendiente.
 
 ## Pendiente
 
-- [ ] UI: formularios de edición y gráficos (hoy es de lectura + acciones puntuales)
-- [ ] Persistencia (hoy el mundo vive en memoria y `POST /api/reiniciar` lo restaura)
-- [ ] Leyes con múltiples objetivos a la vez (hoy una ley apunta a un objetivo)
-- [ ] Exportar/importar el estado del mundo (JSON)
+- [ ] UI: edición de capital/acciones y suscripciones en vivo (hoy hay que refrescar)
+- [ ] Mercado con libro de órdenes real (hoy el precio lo fija una fórmula)
+- [ ] Inflación, tasas y banco central (el PIB es nominal)
+- [ ] Leyes que afecten el PIB y los recursos (hoy afectan sueldos, propiedades y IA)
+- [ ] Quiebras y desempleo automáticos
+- [ ] Tests del esquema GraphQL e import/export del estado en JSON
+
+## Modelo económico (feat/simulacion-economica-graphql)
+
+- [x] `Recurso` (agua, electricidad, combustible, minerales) con disponibilidad y precio
+- [x] `Ambiente` (contaminación, calidad de aire, temperatura, biodiversidad)
+- [x] `Economia` con PIB global, productividad global, período e histórico
+- [x] Productividad por empresa + productividad global que escala todos los sueldos
+- [x] `Accion` y `Mercado`: capitalización, índice y reprecio por período
+- [x] Adquisición de empresas (empresa o IA, con prima del 20%)
+- [x] `services/simulacion.ts`: ciclo por período (producción → recursos → ambiente → productividad → PIB → mercado)
+- [x] API migrada a **GraphQL** (`graphql-yoga` sobre Elysia) con GraphiQL
+- [x] Persistencia en **SQLite** con semilla para `reiniciar`
+- [x] UI: pestañas Economía, Mercado y Recursos (con sparklines propias)
+- [x] `serve` sirve la UI y la API en el mismo puerto

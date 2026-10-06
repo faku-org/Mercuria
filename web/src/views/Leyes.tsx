@@ -33,7 +33,7 @@ export function LeyesView({
           <Stat
             key={objetivo}
             etiqueta={OBJETIVOS[objetivo] ?? objetivo}
-            valor={formatearPorcentaje(resumen.factores[objetivo] ?? 0)}
+            valor={formatearPorcentaje(resumen[objetivo] ?? 0)}
           />
         ))}
       </div>

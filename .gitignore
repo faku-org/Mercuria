@@ -26,5 +26,11 @@ Thumbs.db
 # Cobertura de tests
 coverage/
 
+# Base de datos local (SQLite)
+data/
+*.db
+*.db-wal
+*.db-shm
+
 # Salida generada por graphify
 graphify-out/

@@ -1,60 +1,126 @@
 # API y UI
 
-El backend expone el dominio por HTTP (`src/server/`) y la UI (`web/`) lo consume. Todo
-el mundo vive **en memoria**: los datos salen de `src/fixtures/` y se mutan con las
-acciones; `POST /api/reiniciar` restaura el estado inicial.
+El backend expone el dominio por **GraphQL** (`src/server/`) y la UI (`web/`) lo consume
+por ese mismo endpoint. El estado variable se persiste en **SQLite** (ver
+[Persistencia](economia.md#persistencia-sqlite)).
 
 ```bash
-bun run serve     # API en http://localhost:3011
-bun run web:dev   # UI en http://localhost:3010 (proxy /api → 3011)
+bun run serve     # API + UI en http://localhost:3011/
+bun run web:dev   # UI en modo dev (:3010, proxy /graphql → :3011)
+bun run web:build # genera web/dist, que `serve` sirve en la raíz
 ```
 
-## Endpoints
+Con `web/dist` presente, **un solo puerto** sirve la UI en `/` y la API en `/graphql`
+(con GraphiQL). Sin build, `/graphql` sigue funcionando y `/` da 404.
 
-| Método | Ruta                           | Descripción                                         |
-| ------ | ------------------------------ | --------------------------------------------------- |
-| GET    | `/api/salud`                   | Health check.                                       |
-| GET    | `/api/mundo`                   | Estado completo (naciones, leyes, nómina, IA, ...). |
-| GET    | `/api/nomina`                  | Solo la nómina (líneas + totales).                  |
-| POST   | `/api/empleados`               | Crea un empleado.                                   |
-| POST   | `/api/leyes/:id/toggle`        | Activa/desactiva una ley.                           |
-| POST   | `/api/propiedades/:id/comprar` | La empresa compra una propiedad.                    |
-| POST   | `/api/agentes`                 | Asigna un agente a la IA.                           |
-| POST   | `/api/reiniciar`               | Restaura los datos iniciales.                       |
+## Endpoint
 
-### Cuerpos
+| Ruta             | Qué es                                                  |
+| ---------------- | ------------------------------------------------------- |
+| `GET /`          | `web/dist/index.html` (la UI).                          |
+| `GET /assets/*`  | Bundle de la UI (JS/CSS).                               |
+| `GET /api/salud` | Health check (`{ ok, servicio, web }`).                 |
+| `ALL /graphql`   | GraphQL: queries, mutations y GraphiQL en el navegador. |
 
-```jsonc
-// POST /api/empleados
-{ "tipo": "fijo" | "porHora" | "vendedor" | "jefe", "nombre": "Ana",
-  "horasTrabajadas": 160, "tarifaPorHora": 2500,     // porHora
-  "sueldoBase": 30000, "ventas": 500000, "porcentajeComision": 5, "sueldo": 80000 }
+## Queries
 
-// POST /api/agentes
-{ "nombre": "Orion Soporte", "modelo": "Claude 3.5", "sector": "soporte", "productividad": 0.9 }
+| Query          | Devuelve                                                        |
+| -------------- | --------------------------------------------------------------- |
+| `mundo`        | Todo el estado en un objeto `Mundo`.                            |
+| `economia`     | PIB, productividad global, recursos, ambiente e histórico.      |
+| `mercado`      | Índice y cotizaciones.                                          |
+| `recursos`     | Recursos con disponibilidad, escasez y precio.                  |
+| `empresas`     | Empresas con productividad, aporte al PIB y subsidiarias.       |
+| `empleados`    | Nómina cruda (sueldo base, factor leyes, factor productividad). |
+| `nomina`       | Líneas + totales + productividad global.                        |
+| `naciones`     | Naciones con sus leyes.                                         |
+| `estados`      | Estados con sus leyes estatales.                                |
+| `leyes`        | Todas las leyes.                                                |
+| `resumenLeyes` | Cantidad y factor total por objetivo.                           |
+| `ais`          | IAs con agentes, sueldo y empresas adquiridas.                  |
+| `propiedades`  | Propiedades con precio ajustado por leyes y dueño.              |
+
+> Los campos de `Mundo` también existen en la raíz del esquema, así la UI puede pedir
+> exactamente lo que necesita en un solo round-trip.
+
+## Mutations
+
+| Mutation                               | Efecto                                                      |
+| -------------------------------------- | ----------------------------------------------------------- |
+| `avanzarPeriodo(periodos: Int)`        | Corre N ciclos de simulación y devuelve la `Economia`.      |
+| `ajustarProductividad(empresa, valor)` | Fija la productividad de una empresa (recalcula la global). |
+| `adquirirEmpresa(objetivo, porIA)`     | Compra una empresa vía mercado (prima 20%).                 |
+| `toggleLey(id)`                        | Activa/desactiva una ley.                                   |
+| `crearEmpleado(input)`                 | Alta de empleado (`fijo`, `porHora`, `vendedor`, `jefe`).   |
+| `crearAgente(input)`                   | Alta de agente de la IA.                                    |
+| `comprarPropiedad(id)`                 | La empresa compra una propiedad.                            |
+| `reiniciar`                            | Vuelve a la semilla guardada en SQLite.                     |
+
+Las mutations devuelven `Resultado { ok, motivo, detalle, costo }` (salvo las que
+devuelven `Economia` o `Mundo`), así la UI puede mostrar por qué falló una operación.
+
+```graphql
+# ejemplo
+mutation {
+  adquirirEmpresa(objetivo: "Nova Labs", porIA: true) {
+    ok
+    motivo
+    detalle
+    costo
+  }
+}
+query {
+  economia {
+    periodo
+    pibGlobal
+    productividadGlobal
+  }
+  mercado {
+    indice
+    cotizaciones {
+      empresa
+      precio
+      capitalizacion
+    }
+  }
+}
 ```
-
-Códigos: `201` al crear, `404` si la ley no existe, `409` si la compra no se puede pagar.
 
 ## UI
 
 `web/` es un panel de lectura con acciones puntuales. Pestañas:
 
-| Pestaña      | Muestra                                                             |
-| ------------ | ------------------------------------------------------------------- |
-| Nómina       | Sueldo base, factor de leyes y sueldo final por empleado + totales. |
-| Naciones     | Naciones y estados con capital, idioma, población y sus leyes.      |
-| Leyes        | Efecto, magnitud y alcance de cada ley; botón activar/desactivar.   |
-| Propiedades  | Precio con leyes, ubicación, dueño y botón de compra.               |
-| Empresas     | Capital, ubicación, jefe, plantilla, propiedades e IA.              |
-| IA y agentes | Sueldo de la IA, agentes por sector, costo de uso y alta de agente. |
+| Pestaña      | Muestra                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Economía     | PIB, productividad global, disponibilidad, histórico (sparklines) y botones para avanzar 1/10 períodos y fijar la productividad de cada empresa. |
+| Mercado      | Cotizaciones, variación, capitalización y adquisición por parte de la Empresa Demo o de la IA.                                                   |
+| Recursos     | Disponibilidad y precio de cada recurso, contaminación, temperatura e impacto ambiental.                                                         |
+| Nómina       | Sueldo base, factor de leyes, factor de productividad y sueldo final + totales.                                                                  |
+| Naciones     | Naciones y estados con capital, idioma, población y sus leyes.                                                                                   |
+| Leyes        | Efecto, magnitud y alcance de cada ley; botón activar/desactivar.                                                                                |
+| Propiedades  | Precio con leyes, ubicación, dueño y botón de compra.                                                                                            |
+| Empresas     | Capital, productividad, ubicación, jefe, plantilla, propiedades, cotización, capitalización, valor contable, IA y subsidiarias.                  |
+| IA y agentes | Sueldo de la IA, empresas adquiridas, agentes por sector, costo de uso y alta de agente.                                                         |
 
-Stack: React 19 + Vite + TailwindCSS v4 + `lucide-react`. Estilo: paleta neutra con un
-solo acento (`--color-accent`), sin degradados.
+Stack: React 19 + Vite + TailwindCSS v4 + `lucide-react`. Gráficos: un `Sparkline` en SVG
+propio (sin librería de charts). Estilo: paleta neutra con un solo acento
+(`--color-accent`), sin degradados.
+
+## Exposición (demo)
+
+El servicio corre como `polimorfismo.service` (systemd, loopback `127.0.0.1:3011`) y se
+expone **solo por tailnet** con Tailscale Serve:
+
+```bash
+sudo tailscale serve --bg --https=8445 http://127.0.0.1:3011
+# https://vps-660e4a8c.tail7f613b.ts.net:8445/
+```
+
+Base de datos del servicio: `/home/hermes/srv-data/polimorfismo/mundo.db`.
 
 ## Ideas para seguir
 
-- Persistencia (SQLite o JSON en disco) en vez de estado en memoria.
-- Edición en la UI (sueldos, capital, leyes) además de las acciones actuales.
-- Gráficos de impacto de leyes por objetivo.
-- Tests de los endpoints (Bun + `app.handle`).
+- Suscripciones GraphQL para ver la simulación en vivo sin refrescar.
+- Edición en la UI (capital, acciones, leyes) además de las acciones actuales.
+- Tests del esquema GraphQL (introspection + queries de humo).
+- Libro de órdenes real en el mercado (hoy el precio lo fija una fórmula).

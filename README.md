@@ -34,7 +34,8 @@ polimorfismo/
 ## Tech stack
 
 - **TypeScript** en modo `strict`, ejecutado con [Bun](https://bun.sh) (sin paso de build).
-- **API**: Elysia + `@elysiajs/cors`.
+- **API**: GraphQL con `graphql-yoga` montado sobre Elysia.
+- **Persistencia**: SQLite vía `bun:sqlite` (sin dependencias externas).
 - **Web**: React 19, Vite, TailwindCSS v4, `lucide-react`.
 - **Lint/formato**: `oxlint` / `oxfmt`. **Tests**: `bun test`.
 
@@ -52,36 +53,42 @@ bun test        # tests del dominio
 ## API + UI
 
 ```bash
-bun run serve     # API en http://localhost:3011
-bun run web:dev   # UI en http://localhost:3010 (proxy /api → 3011)
+bun run serve     # UI + API en http://localhost:3011/ (GraphQL en /graphql)
+bun run web:dev   # UI en modo dev (:3010, proxy a :3011)
 ```
+
+El estado se persiste en SQLite (`POLIMORFISMO_DB`, por defecto `data/mundo.db`).
+Detalle del modelo económico en [docs/economia.md](docs/economia.md).
 
 ## Scripts
 
-| Script            | Descripción                                  |
-| ----------------- | -------------------------------------------- |
-| `bun run start`   | CLI interactiva (`src/index.ts`).            |
-| `bun run demo`    | Nómina de ejemplo sin interacción.           |
-| `bun run serve`   | API HTTP en `:3011` (`src/server/index.ts`). |
-| `bun run web:dev` | UI en `:3010` con proxy a la API.            |
-| `bun run check`   | Chequeo de tipos (`tsc --noEmit`).           |
-| `bun test`        | Tests del dominio.                           |
-| `bun run lint`    | Lint con `oxlint`.                           |
-| `bun run format`  | Formatea con `oxfmt`.                        |
+| Script              | Descripción                                          |
+| ------------------- | ---------------------------------------------------- |
+| `bun run start`     | CLI interactiva (`src/index.ts`).                    |
+| `bun run demo`      | Nómina de ejemplo sin interacción.                   |
+| `bun run serve`     | UI + API GraphQL en `:3011` (`src/server/index.ts`). |
+| `bun run web:dev`   | UI en `:3010` con proxy a la API.                    |
+| `bun run web:build` | Genera `web/dist` (lo sirve `serve` en `/`).         |
+| `bun run check`     | Chequeo de tipos (`tsc --noEmit`).                   |
+| `bun test`          | Tests del dominio.                                   |
+| `bun run lint`      | Lint con `oxlint`.                                   |
+| `bun run format`    | Formatea con `oxfmt`.                                |
 
 ## Documentación
 
-| Documento                                    | Contenido                                  |
-| -------------------------------------------- | ------------------------------------------ |
-| [docs/organizacion.md](docs/organizacion.md) | Carpetas, capas y reglas de dependencia.   |
-| [docs/convenciones.md](docs/convenciones.md) | Nombres, exports y cómo agregar un módulo. |
-| [docs/dominio.md](docs/dominio.md)           | Clases del dominio y su estado.            |
-| [docs/api-y-ui.md](docs/api-y-ui.md)         | Endpoints de la API y vistas de la UI.     |
-| [docs/roadmap.md](docs/roadmap.md)           | Checklist de mínimos, extras y pendientes. |
+| Documento                                    | Contenido                                                             |
+| -------------------------------------------- | --------------------------------------------------------------------- |
+| [docs/organizacion.md](docs/organizacion.md) | Carpetas, capas y reglas de dependencia.                              |
+| [docs/convenciones.md](docs/convenciones.md) | Nombres, exports y cómo agregar un módulo.                            |
+| [docs/dominio.md](docs/dominio.md)           | Clases del dominio y su estado.                                       |
+| [docs/economia.md](docs/economia.md)         | Modelo económico: productividad, PIB, mercado, recursos y simulación. |
+| [docs/api-y-ui.md](docs/api-y-ui.md)         | GraphQL, vistas de la UI y persistencia.                              |
+| [docs/roadmap.md](docs/roadmap.md)           | Checklist de mínimos, extras y pendientes.                            |
 
 ## Estado
 
 - **Listo**: requisitos mínimos; extras (leyes con efecto/alcance, prioridad estado,
-  propiedades con compra/venta, jerarquía de empresa, IA con agentes); tests del dominio;
-  API HTTP; UI web base.
+  propiedades con compra/venta, jerarquía de empresa, IA con agentes); **modelo económico**
+  (productividad, PIB global, mercado de acciones, adquisiciones, recursos y ambiente);
+  tests del dominio; API **GraphQL**; UI web; persistencia en **SQLite**.
 - **Pendiente**: ver [docs/roadmap.md](docs/roadmap.md).

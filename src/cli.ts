@@ -8,6 +8,7 @@ import EmpleadoPorHora from "./domain/EmpleadoPorHora";
 import Vendedor from "./domain/Vendedor";
 import { formatearMoneda, imprimirNomina } from "./services/nomina";
 import empleadosDemo, { empresaDemo } from "./fixtures/empleadosBase";
+import { economiaDemo } from "./fixtures/economiaBase";
 import { nacionPrincipal } from "./fixtures/nacionesBase";
 import { california } from "./fixtures/estadosBase";
 import leyesBase, { leyesGlobales } from "./fixtures/leyesBase";
@@ -58,7 +59,7 @@ function registrar(empleado: Empleado, nombre: string): void {
 }
 
 function verNomina(): void {
-  imprimirNomina(empleados, leyesGlobales);
+  imprimirNomina(empleados, leyesGlobales, economiaDemo.productividadGlobal);
 }
 
 function cargarDemo(): void {
@@ -103,6 +104,10 @@ function crearEmpleado(): void {
 
 function verEmpresaDemo(): void {
   console.log(`Empresa: ${empresaDemo.nombre} — capital ${formatearMoneda(empresaDemo.capital)}`);
+  console.log(
+    `Productividad: ×${empresaDemo.productividad.toFixed(2)} · global ×${economiaDemo.productividadGlobal.toFixed(3)}`,
+  );
+  console.log(`PIB global: ${formatearMoneda(economiaDemo.pibGlobal)}`);
   console.log(`Leyes vigentes en su ubicación: ${leyesBase.length}`);
 }
 
@@ -159,7 +164,7 @@ function obtenerArgv(): string[] {
 function main(): void {
   if (obtenerArgv().includes("--demo")) {
     console.log("=== Polimorfismo · Demo de nómina ===");
-    imprimirNomina(empleadosDemo, leyesGlobales);
+    imprimirNomina(empleadosDemo, leyesGlobales, economiaDemo.productividadGlobal);
     return;
   }
 

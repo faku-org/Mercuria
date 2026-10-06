@@ -1,4 +1,4 @@
-// Tipos espejo de los DTOs que devuelve la API (src/server/mundo.ts).
+// Tipos espejo del esquema GraphQL (src/server/schema.ts).
 
 export type ObjetivoLey = "sueldo" | "empresa" | "propiedad" | "ai";
 export type EfectoLey = "positivo" | "negativo";
@@ -27,8 +27,11 @@ export interface Nacion {
   leyes: Ley[];
 }
 
-export interface Estado extends Nacion {
+export interface Estado {
+  nombre: string;
+  id: string;
   nacion: string;
+  leyes: Ley[];
 }
 
 export interface Empleado {
@@ -38,8 +41,9 @@ export interface Empleado {
   tipoSueldo: string;
   sueldoBase: number;
   factorLeyes: number;
+  factorProductividad: number;
   sueldoFinal: number;
-  empresa: string;
+  empresa?: string;
 }
 
 export interface LineaNomina {
@@ -49,6 +53,7 @@ export interface LineaNomina {
   tipoSueldo: string;
   sueldoBase: number;
   factorLeyes: number;
+  factorProductividad: number;
   sueldoFinal: number;
 }
 
@@ -56,6 +61,7 @@ export interface Nomina {
   lineas: LineaNomina[];
   totalBase: number;
   totalFinal: number;
+  productividadGlobal: number;
 }
 
 export interface Propiedad {
@@ -65,19 +71,30 @@ export interface Propiedad {
   precioConLeyes: number;
   nacion: string;
   estado: string | null;
-  dueño: string | null;
+  duenio: string | null;
 }
 
 export interface Empresa {
   nombre: string;
   id: number;
   capital: number;
+  productividad: number;
+  acciones: number;
+  intensidadEmision: number;
   nacion: string | null;
   estado: string | null;
   jefe: string | null;
+  ai: string | null;
+  capitalizacion: number;
+  precioAccion: number | null;
+  variacion: number | null;
+  valorContable: number;
+  aportePib: number;
+  esControlada: boolean;
+  controladaPor: string | null;
+  subsidiarias: string[];
   empleados: Empleado[];
   propiedades: Propiedad[];
-  ai: string | null;
   nominaTotal: number;
 }
 
@@ -94,22 +111,87 @@ export interface AIInfo {
   id: string;
   nombre: string;
   modelo: string;
+  productividad: number;
   empresaMatriz: string;
   asi: boolean;
   rogue: boolean;
   sueldoBase: number;
   sueldoFinal: number;
+  empresas: string[];
   agentes: Agente[];
+}
+
+export interface Recurso {
+  id: string;
+  nombre: string;
+  tipo: string;
+  unidad: string;
+  disponibilidad: number;
+  escasez: number;
+  precio: number;
+}
+
+export interface Ambiente {
+  contaminacion: number;
+  calidadAire: number;
+  temperatura: number;
+  biodiversidad: number;
+  impacto: number;
+}
+
+export interface PuntoEconomico {
+  periodo: number;
+  pib: number;
+  productividadGlobal: number;
+  contaminacion: number;
+  indiceMercado: number;
+}
+
+export interface Economia {
+  periodo: number;
+  pibGlobal: number;
+  pibAnterior: number;
+  crecimiento: number;
+  productividadGlobal: number;
+  disponibilidadMedia: number;
+  factorRecursos: number;
+  ambiente: Ambiente;
+  recursos: Recurso[];
+  historico: PuntoEconomico[];
+}
+
+export interface Cotizacion {
+  empresa: string;
+  precio: number;
+  precioAnterior: number;
+  cantidad: number;
+  capitalizacion: number;
+  variacion: number;
+  indice: number;
+}
+
+export interface Mercado {
+  indice: number;
+  cotizaciones: Cotizacion[];
 }
 
 export interface ResumenLeyes {
   total: number;
   activas: number;
-  factores: Record<ObjetivoLey, number>;
+  sueldo: number;
+  empresa: number;
+  propiedad: number;
+  ai: number;
+}
+
+export interface Resultado {
+  ok: boolean;
+  motivo: string | null;
+  detalle: string | null;
+  costo?: number | null;
 }
 
 export interface Mundo {
-  generado: string;
   naciones: Nacion[];
   estados: Estado[];
   leyes: Ley[];
@@ -119,4 +201,6 @@ export interface Mundo {
   nomina: Nomina;
   propiedades: Propiedad[];
   ais: AIInfo[];
+  economia: Economia;
+  mercado: Mercado;
 }

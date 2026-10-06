@@ -7,7 +7,17 @@ export function EmpresasView({ empresas }: { empresas: Empresa[] }) {
     <div className="space-y-4">
       {empresas.map((empresa) => (
         <Card key={empresa.id}>
-          <Titulo accion={<Badge tono="acento">{formatearMoneda(empresa.capital)}</Badge>}>
+          <Titulo
+            accion={
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge>×{empresa.productividad.toFixed(2)} prod.</Badge>
+                {empresa.controladaPor ? (
+                  <Badge tono="acento">{empresa.controladaPor}</Badge>
+                ) : null}
+                <Badge tono="acento">{formatearMoneda(empresa.capital)}</Badge>
+              </div>
+            }
+          >
             {empresa.nombre}
           </Titulo>
 
@@ -71,6 +81,31 @@ export function EmpresasView({ empresas }: { empresas: Empresa[] }) {
               ))}
             </ul>
           )}
+
+          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+            <div className="rounded-xl border border-line p-3">
+              <p className="text-xs text-muted">Cotización</p>
+              <p className="tabular mt-1">
+                {empresa.precioAccion === null
+                  ? "no cotiza"
+                  : formatearMoneda(empresa.precioAccion)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-line p-3">
+              <p className="text-xs text-muted">Capitalización</p>
+              <p className="tabular mt-1">{formatearMoneda(empresa.capitalizacion)}</p>
+            </div>
+            <div className="rounded-xl border border-line p-3">
+              <p className="text-xs text-muted">Valor contable</p>
+              <p className="tabular mt-1">{formatearMoneda(empresa.valorContable)}</p>
+            </div>
+          </div>
+
+          {empresa.subsidiarias.length > 0 ? (
+            <p className="mt-3 text-xs text-muted">
+              Subsidiarias: {empresa.subsidiarias.join(", ")}
+            </p>
+          ) : null}
         </Card>
       ))}
     </div>

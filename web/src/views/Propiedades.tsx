@@ -29,8 +29,8 @@ export function PropiedadesView({
                     {propiedad.nacion}
                   </p>
                 </div>
-                <Badge tono={propiedad["dueño"] ? "acento" : "neutro"}>
-                  {propiedad["dueño"] ? "ocupada" : "libre"}
+                <Badge tono={propiedad.duenio ? "acento" : "neutro"}>
+                  {propiedad.duenio ? "ocupada" : "libre"}
                 </Badge>
               </div>
 
@@ -47,13 +47,13 @@ export function PropiedadesView({
                 </div>
                 <p className="flex items-center gap-1 text-xs text-muted">
                   <User size={13} />
-                  {propiedad["dueño"] ?? "sin dueño"}
+                  {propiedad.duenio ?? "sin dueño"}
                 </p>
               </div>
 
               <p className="mt-2 font-mono text-[11px] text-muted">{propiedad.id}</p>
 
-              {!propiedad["dueño"] ? (
+              {!propiedad.duenio ? (
                 <Button
                   variante="secundario"
                   onClick={() => void accion(() => api.comprarPropiedad(propiedad.id))}

@@ -13,8 +13,10 @@ polimorfismo/
 │   ├── fixtures/            Datos de prueba / semilla
 │   ├── server/              API HTTP
 │   │   ├── index.ts         Entrada del servidor (listen)
-│   │   ├── app.ts           Rutas Elysia
-│   │   └── mundo.ts         Estado del mundo + DTOs + acciones
+│   │   ├── app.ts           Rutas (GraphQL + estáticos)
+│   │   ├── schema.ts        Esquema GraphQL (typeDefs + resolvers)
+│   │   ├── mundo.ts         Estado del mundo + DTOs + acciones
+│   │   └── db.ts            Persistencia SQLite (bun:sqlite)
 │   ├── cli.ts               CLI interactiva
 │   ├── index.ts             Punto de entrada de la CLI
 │   └── debug.ts             Espacio para pruebas manuales
