@@ -10,6 +10,8 @@ import {
   Stat,
   Titulo,
   formatearMoneda,
+  formatearNivel,
+  formatearNumero,
   inputClass,
 } from "../components/ui";
 
@@ -52,7 +54,26 @@ export function AIView({ ais, accion }: { ais: AIInfo[]; accion: Accion }) {
           <p className="mt-4 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted">
             <Bot size={13} /> Agentes ({ai.agentes.length})
           </p>
-          <div className="mt-2 overflow-hidden rounded-xl border border-line">
+          {/* Móvil: lista. La tabla de 5 columnas no entra en 390px. */}
+          <ul className="mt-2 divide-y divide-line overflow-hidden rounded-xl border border-line md:hidden">
+            {ai.agentes.map((agente) => (
+              <li key={agente.id} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{agente.nombre}</p>
+                    <p className="text-xs text-muted">{agente.modelo}</p>
+                  </div>
+                  <Badge>{agente.sector}</Badge>
+                </div>
+                <div className="tabular mt-1.5 flex justify-between text-xs text-muted">
+                  <span>productividad {formatearNivel(agente.productividad, 0)}</span>
+                  <span>costo de uso {formatearNumero(agente.costoUso, 4)}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-2 hidden overflow-hidden rounded-xl border border-line md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-muted">
@@ -74,7 +95,9 @@ export function AIView({ ais, accion }: { ais: AIInfo[]; accion: Accion }) {
                     <td className="tabular px-4 py-2.5 text-right">
                       {(agente.productividad * 100).toFixed(0)}%
                     </td>
-                    <td className="tabular px-4 py-2.5 text-right">{agente.costoUso.toFixed(4)}</td>
+                    <td className="tabular px-4 py-2.5 text-right">
+                      {formatearNumero(agente.costoUso, 4)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

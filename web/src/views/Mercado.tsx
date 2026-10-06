@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { Bot, Building2, TrendingDown, TrendingUp } from "lucide-react";
 import * as api from "../api";
-import { Badge, Button, Card, Stat, Titulo, formatearMoneda } from "../components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  Stat,
+  Titulo,
+  formatearMoneda,
+  formatearNumero,
+} from "../components/ui";
 import type { Empresa, Mercado } from "../types";
 
 type Accion = (fn: () => Promise<unknown>) => Promise<void>;
@@ -39,7 +47,11 @@ export function MercadoView({
   return (
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat etiqueta="Índice de mercado" valor={mercado.indice.toFixed(2)} nota="base 100" />
+        <Stat
+          etiqueta="Índice de mercado"
+          valor={formatearNumero(mercado.indice, 2)}
+          nota="base 100"
+        />
         <Stat etiqueta="Empresas cotizando" valor={String(mercado.cotizaciones.length)} />
         <Stat etiqueta="Capitalización total" valor={formatearMoneda(total)} />
       </div>
@@ -48,7 +60,56 @@ export function MercadoView({
         <div className="border-b border-line px-5 py-4">
           <Titulo>Mercado</Titulo>
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Móvil: tarjetas con los botones de adquisición alcanzables. */}
+        <ul className="divide-y divide-line md:hidden">
+          {mercado.cotizaciones.map((cotizacion) => {
+            const empresa = controlDe(cotizacion.empresa);
+            const alza = cotizacion.variacion >= 0;
+            return (
+              <li key={cotizacion.empresa} className="px-5 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{cotizacion.empresa}</p>
+                    <p className="mt-0.5 text-xs text-muted">
+                      {empresa?.controladaPor
+                        ? `controla ${empresa.controladaPor}`
+                        : "independiente"}{" "}
+                      · {cotizacion.cantidad.toLocaleString("es-AR")} acciones
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="tabular font-semibold">{formatearMoneda(cotizacion.precio)}</p>
+                    <p className={`tabular text-xs ${alza ? "text-emerald-600" : "text-rose-600"}`}>
+                      {alza ? "+" : ""}
+                      {formatearNumero(cotizacion.variacion * 100, 2)}%
+                    </p>
+                  </div>
+                </div>
+                <p className="tabular mt-1 text-xs text-muted">
+                  capitalización {formatearMoneda(cotizacion.capitalizacion)}
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Button
+                    variante="secundario"
+                    disabled={Boolean(empresa?.esControlada)}
+                    onClick={() => void adquirir(cotizacion.empresa, false)}
+                  >
+                    <Building2 size={14} /> Empresa
+                  </Button>
+                  <Button
+                    disabled={Boolean(empresa?.esControlada)}
+                    onClick={() => void adquirir(cotizacion.empresa, true)}
+                  >
+                    <Bot size={14} /> Orion
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-muted">
@@ -76,7 +137,7 @@ export function MercadoView({
                         className={`inline-flex items-center gap-1 ${alza ? "text-emerald-600" : "text-rose-600"}`}
                       >
                         {alza ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                        {(cotizacion.variacion * 100).toFixed(2)}%
+                        {formatearNumero(cotizacion.variacion * 100, 2)}%
                       </span>
                     </td>
                     <td className="tabular px-5 py-3 text-right text-muted">

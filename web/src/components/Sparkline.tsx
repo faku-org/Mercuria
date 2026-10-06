@@ -35,7 +35,13 @@ export function Sparkline({
   return (
     <div>
       {etiqueta ? <div className="mb-1 text-xs text-muted">{etiqueta}</div> : null}
-      <svg width={ancho} height={alto} viewBox={`0 0 ${ancho} ${alto}`} role="img">
+      <svg
+        viewBox={`0 0 ${ancho} ${alto}`}
+        preserveAspectRatio="none"
+        className="w-full"
+        style={{ height: alto }}
+        role="img"
+      >
         <polyline
           points={puntos}
           fill="none"

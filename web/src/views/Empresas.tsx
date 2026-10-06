@@ -1,6 +1,6 @@
 import { Bot, Crown, MapPin, Users } from "lucide-react";
 import type { Empresa } from "../types";
-import { Badge, Card, formatearMoneda, Titulo } from "../components/ui";
+import { Badge, Card, formatearMoneda, formatearNumero, Titulo } from "../components/ui";
 
 export function EmpresasView({ empresas }: { empresas: Empresa[] }) {
   return (
@@ -10,7 +10,7 @@ export function EmpresasView({ empresas }: { empresas: Empresa[] }) {
           <Titulo
             accion={
               <div className="flex flex-wrap items-center gap-2">
-                <Badge>×{empresa.productividad.toFixed(2)} prod.</Badge>
+                <Badge>×{formatearNumero(empresa.productividad, 2)} prod.</Badge>
                 {empresa.controladaPor ? (
                   <Badge tono="acento">{empresa.controladaPor}</Badge>
                 ) : null}
@@ -51,12 +51,15 @@ export function EmpresasView({ empresas }: { empresas: Empresa[] }) {
           </p>
           <ul className="mt-2 divide-y divide-line text-sm">
             {empresa.empleados.map((empleado) => (
-              <li key={empleado.id} className="flex items-center justify-between gap-3 py-2">
+              <li
+                key={empleado.id}
+                className="flex flex-col gap-0.5 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+              >
                 <span className="font-medium">
                   {empleado.nombre}
                   {empleado.nombre === empresa.jefe ? <Badge tono="acento">jefe</Badge> : null}
                 </span>
-                <span className="tabular text-muted">
+                <span className="tabular text-xs text-muted sm:text-sm">
                   {formatearMoneda(empleado.sueldoBase)} base →{" "}
                   <span className="text-ink">{formatearMoneda(empleado.sueldoFinal)}</span>
                 </span>

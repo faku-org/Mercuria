@@ -9,6 +9,7 @@ import {
   Card,
   Stat,
   formatearMoneda,
+  formatearNumero,
   formatearPorcentaje,
   inputClass,
   Titulo,
@@ -55,44 +56,86 @@ export function NominaView({ nomina, accion }: { nomina: Nomina; accion: Accion 
         <div className="border-b border-line px-5 py-4">
           <Titulo>Nómina</Titulo>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs uppercase tracking-wide text-muted">
-              <th className="px-5 py-3 font-medium">#</th>
-              <th className="px-5 py-3 font-medium">Nombre</th>
-              <th className="px-5 py-3 font-medium">Tipo</th>
-              <th className="px-5 py-3 font-medium">Sueldo</th>
-              <th className="px-5 py-3 font-medium">Base</th>
-              <th className="px-5 py-3 font-medium">Leyes</th>
-              <th className="px-5 py-3 font-medium text-right">Final</th>
-            </tr>
-          </thead>
-          <tbody>
-            {nomina.lineas.map((linea) => (
-              <tr key={linea.id} className="border-t border-line">
-                <td className="tabular px-5 py-3 text-muted">{linea.id}</td>
-                <td className="px-5 py-3 font-medium">{linea.nombre}</td>
-                <td className="px-5 py-3">
-                  <Badge tono="acento">{linea.tipo.replace("Empleado", "")}</Badge>
-                </td>
-                <td className="px-5 py-3 text-muted">{linea.tipoSueldo}</td>
-                <td className="tabular px-5 py-3">{formatearMoneda(linea.sueldoBase)}</td>
-                <td className="tabular px-5 py-3">
-                  {linea.factorLeyes === 0 ? (
-                    <span className="text-muted">—</span>
-                  ) : (
-                    <span className={linea.factorLeyes > 0 ? "text-emerald-600" : "text-rose-600"}>
-                      {formatearPorcentaje(linea.factorLeyes)}
-                    </span>
-                  )}
-                </td>
-                <td className="tabular px-5 py-3 text-right font-semibold">
-                  {formatearMoneda(linea.sueldoFinal)}
-                </td>
+
+        {/* Móvil: tarjetas. La tabla de 7 columnas no entra en 390px. */}
+        <ul className="divide-y divide-line md:hidden">
+          {nomina.lineas.map((linea) => (
+            <li key={linea.id} className="px-5 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">
+                    <span className="tabular text-muted">#{linea.id} </span>
+                    {linea.nombre}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted">
+                    {linea.tipo.replace("Empleado", "")} · {linea.tipoSueldo}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="tabular font-semibold">{formatearMoneda(linea.sueldoFinal)}</p>
+                  <p className="tabular text-xs text-muted">
+                    base {formatearMoneda(linea.sueldoBase)}
+                  </p>
+                </div>
+              </div>
+              {linea.factorLeyes !== 0 || linea.factorProductividad !== 1 ? (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {linea.factorLeyes !== 0 ? (
+                    <Badge tono={linea.factorLeyes > 0 ? "positivo" : "negativo"}>
+                      leyes {formatearPorcentaje(linea.factorLeyes)}
+                    </Badge>
+                  ) : null}
+                  {linea.factorProductividad !== 1 ? (
+                    <Badge>prod. ×{formatearNumero(linea.factorProductividad, 3)}</Badge>
+                  ) : null}
+                </div>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+
+        <div className="hidden md:block">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wide text-muted">
+                <th className="px-5 py-3 font-medium">#</th>
+                <th className="px-5 py-3 font-medium">Nombre</th>
+                <th className="px-5 py-3 font-medium">Tipo</th>
+                <th className="px-5 py-3 font-medium">Sueldo</th>
+                <th className="px-5 py-3 font-medium">Base</th>
+                <th className="px-5 py-3 font-medium">Leyes</th>
+                <th className="px-5 py-3 font-medium text-right">Final</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {nomina.lineas.map((linea) => (
+                <tr key={linea.id} className="border-t border-line">
+                  <td className="tabular px-5 py-3 text-muted">{linea.id}</td>
+                  <td className="px-5 py-3 font-medium">{linea.nombre}</td>
+                  <td className="px-5 py-3">
+                    <Badge tono="acento">{linea.tipo.replace("Empleado", "")}</Badge>
+                  </td>
+                  <td className="px-5 py-3 text-muted">{linea.tipoSueldo}</td>
+                  <td className="tabular px-5 py-3">{formatearMoneda(linea.sueldoBase)}</td>
+                  <td className="tabular px-5 py-3">
+                    {linea.factorLeyes === 0 ? (
+                      <span className="text-muted">—</span>
+                    ) : (
+                      <span
+                        className={linea.factorLeyes > 0 ? "text-emerald-600" : "text-rose-600"}
+                      >
+                        {formatearPorcentaje(linea.factorLeyes)}
+                      </span>
+                    )}
+                  </td>
+                  <td className="tabular px-5 py-3 text-right font-semibold">
+                    {formatearMoneda(linea.sueldoFinal)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
       <Card>

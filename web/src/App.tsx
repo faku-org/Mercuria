@@ -159,24 +159,29 @@ export default function App() {
       </aside>
 
       <main className="min-w-0 flex-1">
-        <header className="mb-6 flex items-start justify-between gap-4">
+        <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-xl font-semibold">{actual.titulo}</h1>
             <p className="mt-0.5 text-sm text-muted">{actual.desc}</p>
           </div>
-          <Button variante="secundario" onClick={() => void recargar()} disabled={cargando}>
+          <Button
+            variante="secundario"
+            onClick={() => void recargar()}
+            disabled={cargando}
+            className="self-start"
+          >
             {cargando ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
             Actualizar
           </Button>
         </header>
 
-        <div className="mb-4 flex gap-1 overflow-x-auto lg:hidden">
+        <div className="sticky top-0 z-10 -mx-6 mb-4 flex gap-2 overflow-x-auto bg-canvas/95 px-6 py-2 backdrop-blur lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {PESTANAS.map(({ id, label }) => (
             <button
               key={id}
               type="button"
               onClick={() => setPestana(id)}
-              className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium ${
+              className={`min-h-9 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
                 pestana === id ? "bg-accent-soft text-accent" : "text-muted"
               }`}
             >

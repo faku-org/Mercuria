@@ -9,6 +9,8 @@ import {
   Stat,
   Titulo,
   formatearMoneda,
+  formatearNivel,
+  formatearNumero,
   formatearPorcentaje,
 } from "../components/ui";
 import type { Economia, Empresa } from "../types";
@@ -16,23 +18,27 @@ import type { Economia, Empresa } from "../types";
 type Accion = (fn: () => Promise<unknown>) => Promise<void>;
 
 function AjusteProductividad({ empresa, accion }: { empresa: Empresa; accion: Accion }) {
-  const [valor, setValor] = useState(String(empresa.productividad));
+  const [valor, setValor] = useState(empresa.productividad.toFixed(3));
   return (
     <form
-      className="ml-auto flex items-center gap-2"
+      className="flex items-center gap-2 sm:ml-auto"
       onSubmit={(evento) => {
         evento.preventDefault();
         void accion(() => api.ajustarProductividad(empresa.nombre, Number(valor)));
       }}
     >
+      <label className="text-xs text-muted" htmlFor={`prod-${empresa.nombre}`}>
+        productividad
+      </label>
       <input
+        id={`prod-${empresa.nombre}`}
         type="number"
         min="0"
         max="2"
         step="0.05"
         value={valor}
         onChange={(evento) => setValor(evento.target.value)}
-        className="tabular w-24 rounded-lg border border-line bg-surface px-2 py-1 text-sm outline-none focus:border-accent"
+        className="tabular w-24 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm outline-none focus:border-accent"
       />
       <Button type="submit" variante="secundario">
         Fijar
@@ -62,14 +68,14 @@ export function EconomiaView({
         />
         <Stat
           etiqueta="Productividad global"
-          valor={`×${economia.productividadGlobal.toFixed(3)}`}
+          valor={`×${formatearNumero(economia.productividadGlobal, 3)}`}
           nota="escala todos los sueldos"
         />
         <Stat etiqueta="Período" valor={String(economia.periodo)} nota="persistido en SQLite" />
         <Stat
           etiqueta="Disponibilidad de recursos"
-          valor={`${(economia.disponibilidadMedia * 100).toFixed(1)}%`}
-          nota={`factor ${economia.factorRecursos.toFixed(3)}`}
+          valor={formatearNivel(economia.disponibilidadMedia)}
+          nota={`factor ${formatearNumero(economia.factorRecursos, 3)}`}
         />
       </div>
 
@@ -112,10 +118,17 @@ export function EconomiaView({
         <Titulo>Productividad por empresa</Titulo>
         <ul className="divide-y divide-line text-sm">
           {empresas.map((empresa) => (
-            <li key={empresa.nombre} className="flex flex-wrap items-center gap-3 py-2.5">
-              <span className="min-w-36 font-medium">{empresa.nombre}</span>
-              <Badge tono="acento">×{empresa.productividad.toFixed(3)}</Badge>
-              <span className="text-muted">aporte al PIB {formatearMoneda(empresa.aportePib)}</span>
+            <li
+              key={empresa.nombre}
+              className="flex flex-col gap-2 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"
+            >
+              <span className="font-medium sm:min-w-36">{empresa.nombre}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tono="acento">×{formatearNumero(empresa.productividad, 3)}</Badge>
+                <span className="text-xs text-muted sm:text-sm">
+                  aporte al PIB {formatearMoneda(empresa.aportePib)}
+                </span>
+              </div>
               <AjusteProductividad empresa={empresa} accion={accion} />
             </li>
           ))}
