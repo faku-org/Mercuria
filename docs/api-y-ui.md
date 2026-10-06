@@ -42,6 +42,9 @@ Con `web/dist` presente, **un solo puerto** sirve la UI en `/` y la API en `/gra
 | `propiedades`  | Propiedades con precio ajustado por leyes y dueño.              |
 | `estadoSimulacion` | Reloj en vivo: play/pausa, velocidad, períodos/tick y ticks. |
 | `predecir(periodos)` | Proyección por simulación aislada (no toca el estado real). |
+| `yo` | Usuario de la sesión (o `null`). |
+| `resumen` | Resumen de ausencia del usuario: métricas + eventos + sus empresas. |
+| `eventos(desde)` | Bitácora de eventos del mundo. |
 
 > Los campos de `Mundo` también existen en la raíz del esquema, así la UI puede pedir
 > exactamente lo que necesita en un solo round-trip.
@@ -61,6 +64,11 @@ Con `web/dist` presente, **un solo puerto** sirve la UI en `/` y la API en `/gra
 | `iniciarSimulacion(intervaloMs, periodosPorTick)` | Arranca el reloj en vivo.                       |
 | `pausarSimulacion`                     | Pausa el reloj y persiste lo pendiente.                     |
 | `ajustarSimulacion(intervaloMs, periodosPorTick)` | Cambia la velocidad sin tocar play/pausa.        |
+| `registrar(handle, pin, nombre)`       | Crea una cuenta y devuelve una sesión.                     |
+| `login(handle, pin)`                   | Inicia sesión y devuelve un token.                        |
+| `logout`                               | Cierra la sesión del token actual.                        |
+| `fundarEmpresa(nombre, capitalInicial)` | Crea una empresa propia del usuario.                    |
+| `adquirirComoUsuario(objetivo, comprador)` | Una empresa del usuario compra otra del sistema.      |
 
 Las mutations devuelven `Resultado { ok, motivo, detalle, costo }` (salvo las que
 devuelven `Economia`, `Mundo` o `EstadoSimulacion`), así la UI puede mostrar por qué falló
@@ -96,8 +104,12 @@ query {
 ## Simulación en vivo
 
 El reloj corre **en el servidor** (`src/server/reloj.ts`): una sola fuente de verdad para
-todos los clientes. La UI manda la intención (`iniciarSimulacion` / `pausarSimulacion` /
-`ajustarSimulacion`) y recibe el estado por dos caminos:
+todos los clientes. **Arranca solo** al levantar el proceso (`autostart` en
+`src/server/index.ts`), así que la economía avanza aunque no haya nadie conectado. La
+cadencia sale de `POLIMORFISMO_TICK_MS` (default `30000`, o sea un período cada 30 s) y se
+puede desactivar con `POLIMORFISMO_SIM_AUTOSTART=0`. La UI manda la intención
+(`iniciarSimulacion` / `pausarSimulacion` / `ajustarSimulacion`) y recibe el estado por dos
+caminos:
 
 1. **SSE** en `GET /api/stream`: un snapshot del `Mundo` al conectar y otro en cada tick o
    mutación. La UI lo consume con `EventSource` (`web/src/api.ts` → `suscribirMundo`).
@@ -125,6 +137,17 @@ query {
 }
 ```
 
+### Usuarios y empresas propias
+
+- `registrar(handle, pin, nombre)` crea la cuenta y devuelve `{ token, usuario }`; `login`
+  hace lo mismo con una cuenta existente. El token viaja en `Authorization: Bearer <token>`
+  y el PIN se guarda hasheado con `Bun.password` (nunca en claro).
+- `fundarEmpresa(nombre, capitalInicial)` crea una empresa con `duenio = handle` y la lista
+  en el mercado; `adquirirComoUsuario(objetivo, comprador)` hace que una empresa del usuario
+  compre otra del sistema.
+- `resumen` devuelve lo que pasó desde `ultimoVisto` del usuario (variación de métricas +
+  eventos) y actualiza ese marcador. `eventos(desde)` expone la bitácora cruda.
+
 ## UI
 
 `web/` es un panel de lectura con acciones puntuales. Arriba de todo hay una **barra de
@@ -142,6 +165,7 @@ servidor; el resto de las vistas se actualizan solas por SSE. Pestañas:
 | Propiedades  | Precio con leyes, ubicación, dueño y botón de compra.                                                                                            |
 | Empresas     | Capital, productividad, ubicación, jefe, plantilla, propiedades, cotización, capitalización, valor contable, IA y subsidiarias.                  |
 | IA y agentes | Sueldo de la IA, empresas adquiridas, agentes por sector, costo de uso y alta de agente.                                                         |
+| Cuenta       | Login/registro (handle + PIN), resumen de ausencia (métricas + eventos), empresas propias (fundar/adquirir) y bitácora reciente.                  |
 
 Stack: React 19 + Vite + TailwindCSS v4 + `lucide-react`. Gráficos: un `Sparkline` en SVG
 propio (sin librería de charts). Estilo: paleta neutra con un solo acento

@@ -85,8 +85,20 @@ function archivo(rutaRelativa: string): Response {
  * Un solo puerto sirve la UI y la API, así el proxy inverso no necesita
  * mapear dos upstreams.
  */
+/** Extrae el token de `Authorization: Bearer <token>`. */
+function tokenDe(encabezado: string | null): string | null {
+  if (!encabezado) return null;
+  const [esquema, valor] = encabezado.split(" ");
+  return esquema?.toLowerCase() === "bearer" && valor ? valor : null;
+}
+
 export function crearApp() {
-  const yoga = createYoga({ schema, graphiql: true, landingPage: true });
+  const yoga = createYoga({
+    schema,
+    graphiql: true,
+    landingPage: true,
+    context: ({ request }) => ({ token: tokenDe(request.headers.get("authorization")) }),
+  });
   const hayBuild = existsSync(RUTA_WEB);
 
   const app = new Elysia()

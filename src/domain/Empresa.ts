@@ -7,6 +7,7 @@ import type { ObjetivoLey } from "./Ley";
 import { factorLeyesGlobales } from "./Ley";
 import type Nacion from "./Nacion";
 import type Propiedad from "./Propiedad";
+import type Usuario from "./Usuario";
 
 interface OpcionesEmpresa {
   nacion?: Nacion;
@@ -20,6 +21,8 @@ interface OpcionesEmpresa {
   acciones?: number;
   /** Contaminación emitida por unidad de producción. */
   intensidadEmision?: number;
+  /** Dueño humano (usuario). `null` = manejada por el sistema. */
+  duenio?: Usuario | null;
 }
 
 /** Techo de productividad de una empresa. */
@@ -47,6 +50,8 @@ class Empresa {
   subsidiarias: Empresa[];
   /** Quién la controla, si fue adquirida. */
   controladaPor: Empresa | AI | null;
+  /** Dueño humano de la empresa (usuario). `null` = manejada por el sistema. */
+  duenio: Usuario | null;
 
   constructor(
     nombre: string,
@@ -70,6 +75,12 @@ class Empresa {
     this.intensidadEmision = opciones.intensidadEmision ?? 0.5;
     this.subsidiarias = [];
     this.controladaPor = null;
+    this.duenio = opciones.duenio ?? null;
+  }
+
+  /** ¿La maneja un usuario (y no el sistema)? */
+  get esDeUsuario(): boolean {
+    return this.duenio !== null;
   }
 
   /** Lugar fiscal de la empresa: el estado si lo hay, si no la nación. */

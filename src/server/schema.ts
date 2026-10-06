@@ -4,19 +4,28 @@
 import { createSchema } from "graphql-yoga";
 import {
   adquirirEmpresa,
+  adquirirEmpresaUsuario,
   ajustarProductividad,
   avanzar,
   comprarPropiedad,
   crearAgente,
   crearEmpleado,
+  cerrarSesion,
   economiaDto,
+  eventosDesde,
+  fundarEmpresa,
   leyPorId,
   listaEmpresas,
+  loginUsuario,
   mercadoDto,
   mundoDto,
   prediccionDto,
+  registrarUsuario,
   reiniciar,
+  resumenActual,
+  sesionDeToken,
   toggleLey,
+  usuarioActual,
   type NuevoAgente,
   type NuevoEmpleado,
 } from "./mundo";
@@ -102,6 +111,8 @@ const typeDefs = /* GraphQL */ `
     aportePib: Float!
     esControlada: Boolean!
     controladaPor: String
+    duenio: String
+    esDeUsuario: Boolean!
     subsidiarias: [String!]!
     empleados: [Empleado!]!
     propiedades: [Propiedad!]!
@@ -171,6 +182,44 @@ const typeDefs = /* GraphQL */ `
     pibFinal: Float!
     productividadFinal: Float!
     indiceFinal: Float!
+  }
+
+  type Usuario {
+    handle: String!
+    nombre: String!
+    creadoEn: String!
+    ultimoVisto: Int!
+    empresas: [String!]!
+  }
+
+  type Sesion {
+    token: String!
+    usuario: Usuario!
+  }
+
+  type Evento {
+    id: Int!
+    periodo: Int!
+    tipo: String!
+    descripcion: String!
+    handle: String
+    empresa: String
+  }
+
+  type Resumen {
+    desde: Int!
+    hasta: Int!
+    periodos: Int!
+    pibInicio: Float!
+    pibFin: Float!
+    productividadInicio: Float!
+    productividadFin: Float!
+    contaminacionInicio: Float!
+    contaminacionFin: Float!
+    indiceInicio: Float!
+    indiceFin: Float!
+    empresas: [Empresa!]!
+    eventos: [Evento!]!
   }
 
   type Economia {
@@ -284,6 +333,9 @@ const typeDefs = /* GraphQL */ `
     propiedades: [Propiedad!]!
     estadoSimulacion: EstadoSimulacion!
     predecir(periodos: Int): Prediccion!
+    yo: Usuario
+    eventos(desde: Int): [Evento!]!
+    resumen: Resumen
   }
 
   type Mutation {
@@ -298,8 +350,18 @@ const typeDefs = /* GraphQL */ `
     iniciarSimulacion(intervaloMs: Int, periodosPorTick: Int): EstadoSimulacion!
     pausarSimulacion: EstadoSimulacion!
     ajustarSimulacion(intervaloMs: Int, periodosPorTick: Int): EstadoSimulacion!
+    registrar(handle: String!, pin: String!, nombre: String): Sesion!
+    login(handle: String!, pin: String!): Sesion!
+    logout: Boolean!
+    fundarEmpresa(nombre: String!, capitalInicial: Float): Empresa!
+    adquirirComoUsuario(objetivo: String!, comprador: String): Resultado!
   }
 `;
+
+/** Contexto de GraphQL: el token de sesión que llega por header. */
+interface Contexto {
+  token: string | null;
+}
 
 const resolvers = {
   Query: {
@@ -318,6 +380,9 @@ const resolvers = {
     propiedades: () => mundoDto().propiedades,
     estadoSimulacion: () => estadoSimulacion(),
     predecir: (_raiz: unknown, args: { periodos?: number }) => prediccionDto(args.periodos ?? 12),
+    yo: (_raiz: unknown, _args: unknown, ctx: Contexto) => usuarioActual(ctx.token),
+    eventos: (_raiz: unknown, args: { desde?: number }) => eventosDesde(args.desde ?? 0),
+    resumen: (_raiz: unknown, _args: unknown, ctx: Contexto) => resumenActual(ctx.token),
   },
 
   Mutation: {
@@ -381,6 +446,45 @@ const resolvers = {
 
     ajustarSimulacion: (_raiz: unknown, args: { intervaloMs?: number; periodosPorTick?: number }) =>
       ajustarSimulacion(args.intervaloMs, args.periodosPorTick),
+
+    registrar: (
+      _raiz: unknown,
+      args: { handle: string; pin: string; nombre?: string },
+    ) => registrarUsuario(args.handle, args.pin, args.nombre),
+
+    login: (_raiz: unknown, args: { handle: string; pin: string }) =>
+      loginUsuario(args.handle, args.pin),
+
+    logout: (_raiz: unknown, _args: unknown, ctx: Contexto) => {
+      cerrarSesion(ctx.token);
+      return true;
+    },
+
+    fundarEmpresa: (
+      _raiz: unknown,
+      args: { nombre: string; capitalInicial?: number },
+      ctx: Contexto,
+    ) => {
+      const usuario = sesionDeToken(ctx.token);
+      if (!usuario) throw new Error("Iniciá sesión para fundar una empresa.");
+      return fundarEmpresa(usuario, args.nombre, args.capitalInicial ?? 1_000_000);
+    },
+
+    adquirirComoUsuario: (
+      _raiz: unknown,
+      args: { objetivo: string; comprador?: string },
+      ctx: Contexto,
+    ) => {
+      const usuario = sesionDeToken(ctx.token);
+      if (!usuario) throw new Error("Iniciá sesión para adquirir una empresa.");
+      const resultado = adquirirEmpresaUsuario(usuario, args.objetivo, args.comprador);
+      return {
+        ok: resultado.ok,
+        motivo: resultado.motivo ?? null,
+        costo: resultado.costo,
+        detalle: resultado.ok ? `${resultado.comprador} adquirió ${resultado.objetivo}` : null,
+      };
+    },
   },
 };
 

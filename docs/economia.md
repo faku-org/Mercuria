@@ -157,11 +157,26 @@ interface PuntoEconomico {
 ## Simulación en vivo
 
 `avanzarPeriodo` es el mismo ciclo de arriba, pero un **reloj en el servidor**
-(`src/server/reloj.ts`) puede correrlo solo: play/pausa, velocidad (intervalo entre ticks) y
-períodos por tick. El reloj no escribe SQLite en cada cuadro (persiste cada 20 ticks y al
-pausar); sí publica cada cambio en el bus de eventos (`src/server/eventos.ts`), que alimenta
-el stream **SSE** `GET /api/stream`. De ahí que todos los clientes vean el mismo mundo en
-vivo, sin refrescar y sin depender de un intervalo del navegador.
+(`src/server/reloj.ts`) lo corre solo: **arranca con el proceso** (no depende de que haya
+clientes), con play/pausa, velocidad (intervalo entre ticks) y períodos por tick. La
+cadencia sale de `POLIMORFISMO_TICK_MS` (default 30 s). Con cadencia lenta persiste en cada
+período; con cadencia rápida, cada 20 ticks. Cada cambio se publica en el bus de eventos
+(`src/server/eventos.ts`), que alimenta el stream **SSE** `GET /api/stream`. De ahí que
+todos los clientes vean el mismo mundo en vivo, sin refrescar.
+
+### Eventos y resumen de ausencia
+
+Los hechos notables (alta de usuario, fundación de empresa, adquisición) quedan en la
+bitácora `evento`. Un usuario tiene `ultimoVisto` (el período que vio por última vez); al
+volver, `resumen` compara el histórico entre `ultimoVisto` y el período actual y devuelve la
+variación de PIB, productividad, contaminación e índice, el estado de sus empresas y los
+eventos del rango, y actualiza `ultimoVisto`.
+
+### Usuarios
+
+Las cuentas se identifican por `handle` y se protegen con un PIN (hash `Bun.password`).
+Cada usuario puede **fundar** empresas (quedan con `duenio = handle`) y **adquirir** las del
+sistema; las empresas del sistema siguen con `duenio = null`.
 
 ## Predicción (simulación aislada)
 

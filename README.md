@@ -92,7 +92,9 @@ Detalle del modelo económico en [docs/economia.md](docs/economia.md).
   propiedades con compra/venta, jerarquía de empresa, IA con agentes); **modelo económico**
   (productividad, PIB global, mercado de acciones, adquisiciones, recursos y ambiente);
   tests del dominio; API **GraphQL**; UI web; persistencia en **SQLite**; **simulación en
-  tiempo real** (reloj en el servidor + stream SSE + barra de control en la UI) y
-  **predicción** por simulación aislada.
+  tiempo real** (reloj en el servidor + stream SSE + barra de control) y **predicción** por
+  simulación aislada; **simulación autónoma** (avanza sin clientes conectados) con
+  **usuarios** (handle + PIN) que **fundan y adquieren empresas** y reciben un **resumen de
+  ausencia**.
 - **Pendiente**: modelo realista (sector, objetivo, IA, estatales, clientes). Ver
   [docs/issues.md](docs/issues.md) y [docs/roadmap.md](docs/roadmap.md).

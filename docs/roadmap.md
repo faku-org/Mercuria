@@ -130,3 +130,15 @@ Plan completo y dependencias: [issues.md](./issues.md).
 - [ ] D — Empresas estatales y provisión de recursos
 - [ ] E — Clientes, cuota de mercado y beneficio
 - [ ] F — Exposición GraphQL, persistencia, UI y docs del modelo ampliado
+
+## Simulación autónoma y usuarios (branch `feat/simulacion-autonoma-usuarios`)
+
+Plan y issues: [issues.md](./issues.md) (#41–#50).
+
+- [x] La economía avanza sola (autostart + `POLIMORFISMO_TICK_MS`, sin clientes conectados)
+- [x] Bitácora de eventos del mundo (`evento`)
+- [x] Usuarios con handle + PIN (hash `Bun.password`) y sesiones por token
+- [x] Empresas propias: fundar y adquirir (persistencia del dueño y de empresas nuevas)
+- [x] Resumen de ausencia (métricas + eventos)
+- [x] UI: pestaña **Cuenta** (login, mis empresas, resumen, bitácora)
+- [x] Tests de usuarios y docs

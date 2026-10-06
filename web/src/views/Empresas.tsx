@@ -11,6 +11,7 @@ export function EmpresasView({ empresas }: { empresas: Empresa[] }) {
             accion={
               <div className="flex flex-wrap items-center gap-2">
                 <Badge>×{formatearNumero(empresa.productividad, 2)} prod.</Badge>
+                {empresa.duenio ? <Badge tono="positivo">@{empresa.duenio}</Badge> : null}
                 {empresa.controladaPor ? (
                   <Badge tono="acento">{empresa.controladaPor}</Badge>
                 ) : null}

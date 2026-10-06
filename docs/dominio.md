@@ -191,6 +191,19 @@ CLI interactiva (`bun run start`): cargar la nómina de ejemplo, crear empleados
 hora o vendedor), ver la nómina (con leyes), vaciarla y ver la empresa demo. Con `--demo`
 (`bun run demo`) imprime la nómina de ejemplo sin interacción.
 
+## Usuarios
+
+### Usuario — `domain/Usuario.ts`
+
+Cuenta de un jugador.
+
+- Campos: `handle`, `nombre`, `hashPin` (hash del PIN), `creadoEn`, `ultimoVisto` (período) y
+  `empresas: Empresa[]`.
+- `agregarEmpresa` / `quitarEmpresa` y getter `perfil` (sin el hash).
+- Utilidades `normalizarHandle(texto)` y `handleValido(handle)`.
+
+`Empresa` sumó `duenio: Usuario | null` (null = manejada por el sistema) y `esDeUsuario`.
+
 ## Servidor — `src/server/`
 
 | Módulo       | Rol                                                                             |

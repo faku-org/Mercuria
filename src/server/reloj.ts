@@ -1,8 +1,8 @@
 // Reloj de la simulación: hace avanzar el mundo solo, a la velocidad elegida.
 //
-// El estado vive en el servidor (una sola fuente de verdad para todos los
-// clientes). Cada tick avanza `periodosPorTick` períodos y publica el cambio;
-// para no golpear SQLite en cada cuadro, persiste cada `TICKS_POR_GUARDADO`.
+// La economía avanza aunque no haya ningún cliente conectado: el reloj vive en
+// el servidor. `POLIMORFISMO_TICK_MS` ajusta el intervalo (default 30 s) y
+// `POLIMORFISMO_SIM_AUTOSTART=0` desactiva el arranque automático (tests).
 
 import { avanzar, persistirMundo } from "./mundo";
 
@@ -15,10 +15,28 @@ export interface ConfigSimulacion {
 }
 
 const INTERVALO_MIN = 100;
-const INTERVALO_MAX = 60_000;
-const INTERVALO_DEFECTO = 1_000;
+const INTERVALO_MAX = 600_000;
 const PERIODOS_TICK_MAX = 50;
-const TICKS_POR_GUARDADO = 20;
+/** Con cadencia rápida no se guarda en cada tick para no golpear SQLite. */
+const TICKS_RAPIDOS_POR_GUARDADO = 20;
+const CADENCIA_LENTA_MS = 1_000;
+
+function leerEnteroEnv(nombre: string, porDefecto: number): number {
+  const bruto = process.env[nombre];
+  const valor = bruto === undefined ? Number.NaN : Number(bruto);
+  return Number.isFinite(valor) ? valor : porDefecto;
+}
+
+function acotar(valor: number, minimo: number, maximo: number): number {
+  return Math.min(maximo, Math.max(minimo, Math.floor(valor)));
+}
+
+const INTERVALO_DEFECTO = acotar(
+  leerEnteroEnv("POLIMORFISMO_TICK_MS", 30_000),
+  INTERVALO_MIN,
+  INTERVALO_MAX,
+);
+const AUTOSTART = process.env.POLIMORFISMO_SIM_AUTOSTART !== "0";
 
 const config: ConfigSimulacion = {
   corriendo: false,
@@ -30,8 +48,9 @@ const config: ConfigSimulacion = {
 let timer: ReturnType<typeof setInterval> | null = null;
 let ticksSinGuardar = 0;
 
-function acotar(valor: number, minimo: number, maximo: number): number {
-  return Math.min(maximo, Math.max(minimo, Math.floor(valor)));
+/** Cada cuántos ticks se persiste: en cada uno con cadencia lenta. */
+function ticksPorGuardado(): number {
+  return config.intervaloMs >= CADENCIA_LENTA_MS ? 1 : TICKS_RAPIDOS_POR_GUARDADO;
 }
 
 function detenerTimer(): void {
@@ -45,7 +64,7 @@ function tick(): void {
   avanzar(config.periodosPorTick, false);
   config.ticks += 1;
   ticksSinGuardar += 1;
-  if (ticksSinGuardar >= TICKS_POR_GUARDADO) {
+  if (ticksSinGuardar >= ticksPorGuardado()) {
     persistirMundo();
     ticksSinGuardar = 0;
   }
@@ -75,6 +94,12 @@ function iniciar(intervaloMs?: number, periodosPorTick?: number): ConfigSimulaci
   config.corriendo = true;
   reiniciarTimer();
   return estado();
+}
+
+/** Arranca el reloj al levantar el servidor, salvo que el autostart esté apagado. */
+function autostart(): ConfigSimulacion {
+  if (!AUTOSTART) return estado();
+  return iniciar();
 }
 
 /** Pausa el reloj y persiste lo que quedó sin guardar. */
@@ -108,5 +133,5 @@ function detener(): void {
   detenerTimer();
 }
 
-export { iniciar, pausar, ajustar, estado, detener };
+export { iniciar, autostart, pausar, ajustar, estado, detener };
 export default estado;

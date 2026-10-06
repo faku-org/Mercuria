@@ -43,6 +43,10 @@ export interface EstadoPersistible {
     capital: number;
     productividad: number;
     controladaPor: string | null;
+    duenio?: string | null;
+    capacidad?: number;
+    acciones?: number;
+    intensidadEmision?: number;
   }[];
   cotizaciones: {
     empresa: string;
@@ -142,7 +146,41 @@ db.exec(`
     clave TEXT PRIMARY KEY,
     valor TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS usuario (
+    handle TEXT PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    hash_pin TEXT NOT NULL,
+    creado_en TEXT NOT NULL,
+    ultimo_visto INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS evento (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    periodo INTEGER NOT NULL,
+    tipo TEXT NOT NULL,
+    descripcion TEXT NOT NULL,
+    handle TEXT,
+    empresa TEXT
+  );
 `);
+
+/**
+ * Migraciones mínimas por columna. `CREATE TABLE IF NOT EXISTS` no agrega
+ * columnas a tablas ya existentes, así que las sumamos a mano si faltan.
+ */
+function asegurarColumna(tabla: string, columna: string, definicion: string): void {
+  const columnas = db.query(`PRAGMA table_info(${tabla})`).all() as { name: string }[];
+  if (!columnas.some((fila) => fila.name === columna)) {
+    db.run(`ALTER TABLE ${tabla} ADD COLUMN ${columna} ${definicion}`);
+  }
+}
+
+asegurarColumna("empresa", "duenio", "TEXT");
+asegurarColumna("empresa", "sector", "TEXT");
+asegurarColumna("empresa", "capacidad", "REAL");
+asegurarColumna("empresa", "acciones", "REAL");
+asegurarColumna("empresa", "intensidad_emision", "REAL");
 
 /** ¿Hay un estado guardado? */
 export function hayEstado(): boolean {
@@ -198,8 +236,17 @@ export function guardarEstado(estado: EstadoPersistible): void {
 
     for (const fila of e.empresas) {
       db.run(
-        "INSERT INTO empresa (nombre, capital, productividad, controlada_por) VALUES (?, ?, ?, ?)",
-        [fila.nombre, fila.capital, fila.productividad, fila.controladaPor],
+        "INSERT INTO empresa (nombre, capital, productividad, controlada_por, duenio, capacidad, acciones, intensidad_emision) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          fila.nombre,
+          fila.capital,
+          fila.productividad,
+          fila.controladaPor,
+          fila.duenio ?? null,
+          fila.capacidad ?? null,
+          fila.acciones ?? null,
+          fila.intensidadEmision ?? null,
+        ],
       );
     }
 
@@ -256,7 +303,9 @@ export function cargarEstado(): EstadoPersistible | null {
     .query("SELECT id, disponibilidad, precio FROM recurso")
     .all() as EstadoPersistible["recursos"];
   const empresas = db
-    .query("SELECT nombre, capital, productividad, controlada_por AS controladaPor FROM empresa")
+    .query(
+      "SELECT nombre, capital, productividad, controlada_por AS controladaPor, duenio, capacidad, acciones, intensidad_emision AS intensidadEmision FROM empresa",
+    )
     .all() as EstadoPersistible["empresas"];
   const cotizaciones = db
     .query(
@@ -329,4 +378,67 @@ export function cargarSemilla(): EstadoPersistible | null {
 export function vaciarTodo(): void {
   vaciarTablas();
   db.run("DELETE FROM meta");
+}
+
+// --- Usuarios y eventos -------------------------------------------------------
+
+export interface FilaUsuario {
+  handle: string;
+  nombre: string;
+  hashPin: string;
+  creadoEn: string;
+  ultimoVisto: number;
+}
+
+/** Inserta o actualiza un usuario. */
+export function guardarUsuario(usuario: FilaUsuario): void {
+  db.run(
+    `INSERT INTO usuario (handle, nombre, hash_pin, creado_en, ultimo_visto)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(handle) DO UPDATE SET
+       nombre = excluded.nombre,
+       hash_pin = excluded.hash_pin,
+       ultimo_visto = excluded.ultimo_visto`,
+    [usuario.handle, usuario.nombre, usuario.hashPin, usuario.creadoEn, usuario.ultimoVisto],
+  );
+}
+
+/** Todos los usuarios registrados. */
+export function cargarUsuarios(): FilaUsuario[] {
+  return db
+    .query(
+      "SELECT handle, nombre, hash_pin AS hashPin, creado_en AS creadoEn, ultimo_visto AS ultimoVisto FROM usuario",
+    )
+    .all() as FilaUsuario[];
+}
+
+/** Marca hasta qué período vio el usuario. */
+export function actualizarUltimoVisto(handle: string, periodo: number): void {
+  db.run("UPDATE usuario SET ultimo_visto = ? WHERE handle = ?", [periodo, handle]);
+}
+
+export interface FilaEvento {
+  id: number;
+  periodo: number;
+  tipo: string;
+  descripcion: string;
+  handle: string | null;
+  empresa: string | null;
+}
+
+/** Agrega un evento a la bitácora. */
+export function registrarEvento(evento: Omit<FilaEvento, "id">): void {
+  db.run(
+    "INSERT INTO evento (periodo, tipo, descripcion, handle, empresa) VALUES (?, ?, ?, ?, ?)",
+    [evento.periodo, evento.tipo, evento.descripcion, evento.handle, evento.empresa],
+  );
+}
+
+/** Eventos desde un período (inclusive), en orden de creación. */
+export function cargarEventos(desde: number): FilaEvento[] {
+  return db
+    .query(
+      "SELECT id, periodo, tipo, descripcion, handle, empresa FROM evento WHERE periodo >= ? ORDER BY id",
+    )
+    .all(desde) as FilaEvento[];
 }

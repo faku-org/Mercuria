@@ -11,13 +11,15 @@ import {
   RefreshCw,
   RotateCcw,
   Scale,
+  User,
   Wallet,
 } from "lucide-react";
 import * as api from "./api";
-import type { EstadoSimulacion, Mundo } from "./types";
+import type { EstadoSimulacion, Evento, Mundo, Resumen, UsuarioPerfil } from "./types";
 import { BarraSimulacion } from "./components/BarraSimulacion";
 import { Button } from "./components/ui";
 import { AIView } from "./views/AI";
+import { CuentaView } from "./views/Cuenta";
 import { EconomiaView } from "./views/Economia";
 import { EmpresasView } from "./views/Empresas";
 import { LeyesView } from "./views/Leyes";
@@ -91,6 +93,13 @@ const PESTANAS = [
     titulo: "IA y agentes",
     desc: "Entidad total con agentes por sector y costo de uso.",
   },
+  {
+    id: "cuenta",
+    label: "Cuenta",
+    Icono: User,
+    titulo: "Mi cuenta",
+    desc: "Tu sesión, tus empresas y el resumen de lo que pasó mientras no estabas.",
+  },
 ] as const;
 
 type PestanaId = (typeof PESTANAS)[number]["id"];
@@ -102,6 +111,9 @@ export default function App() {
   const [cargando, setCargando] = useState(true);
   const [sim, setSim] = useState<EstadoSimulacion | null>(null);
   const [ocupadoSim, setOcupadoSim] = useState(false);
+  const [usuario, setUsuario] = useState<UsuarioPerfil | null>(null);
+  const [resumen, setResumen] = useState<Resumen | null>(null);
+  const [eventos, setEventos] = useState<Evento[]>([]);
 
   const recargar = useCallback(async () => {
     setCargando(true);
@@ -151,6 +163,79 @@ export default function App() {
     }
   }, []);
 
+  const cargarEventos = useCallback(async () => {
+    try {
+      setEventos(await api.getEventos(0));
+    } catch {
+      // Todavía no hay bitácora.
+    }
+  }, []);
+
+  const cargarSesion = useCallback(async () => {
+    try {
+      const actual = await api.getYo();
+      setUsuario(actual);
+      if (actual) {
+        try {
+          setResumen(await api.getResumen());
+        } catch {
+          setResumen(null);
+        }
+      } else {
+        setResumen(null);
+      }
+    } catch {
+      setUsuario(null);
+    }
+    await cargarEventos();
+  }, [cargarEventos]);
+
+  useEffect(() => {
+    void cargarSesion();
+  }, [cargarSesion]);
+
+  const iniciarSesion = useCallback(
+    async (actual: UsuarioPerfil) => {
+      setUsuario(actual);
+      try {
+        setResumen(await api.getResumen());
+      } catch {
+        setResumen(null);
+      }
+      await cargarEventos();
+    },
+    [cargarEventos],
+  );
+
+  const salir = useCallback(async () => {
+    await api.logout();
+    setUsuario(null);
+    setResumen(null);
+  }, []);
+
+  const refrescarSesion = useCallback(async () => {
+    try {
+      setUsuario(await api.getYo());
+    } catch {
+      // Sin sesión.
+    }
+    await cargarEventos();
+  }, [cargarEventos]);
+
+  const refrescar = useCallback(async () => {
+    await recargar();
+    await refrescarSesion();
+  }, [recargar, refrescarSesion]);
+
+  const actualizarResumen = useCallback(async () => {
+    try {
+      setResumen(await api.getResumen());
+    } catch {
+      setResumen(null);
+    }
+    await cargarEventos();
+  }, [cargarEventos]);
+
   const accion = useCallback(
     async (fn: () => Promise<unknown>) => {
       try {
@@ -171,6 +256,7 @@ export default function App() {
         <div className="mb-6">
           <p className="text-sm font-semibold">Polimorfismo</p>
           <p className="text-xs text-muted">Simulación económica</p>
+          {usuario ? <p className="mt-1 text-xs text-accent">@{usuario.handle}</p> : null}
         </div>
         <nav className="space-y-1">
           {PESTANAS.map(({ id, label, Icono }) => (
@@ -268,6 +354,19 @@ export default function App() {
             ) : null}
             {pestana === "empresas" ? <EmpresasView empresas={mundo.empresas} /> : null}
             {pestana === "ai" ? <AIView ais={mundo.ais} accion={accion} /> : null}
+            {pestana === "cuenta" ? (
+              <CuentaView
+                usuario={usuario}
+                resumen={resumen}
+                eventos={eventos}
+                empresas={mundo.empresas}
+                accion={accion}
+                onSesion={(actual) => void iniciarSesion(actual)}
+                onSalir={() => void salir()}
+                onRefrescar={refrescar}
+                onActualizarResumen={actualizarResumen}
+              />
+            ) : null}
           </>
         )}
       </main>

@@ -92,6 +92,8 @@ export interface Empresa {
   aportePib: number;
   esControlada: boolean;
   controladaPor: string | null;
+  duenio: string | null;
+  esDeUsuario: boolean;
   subsidiarias: string[];
   empleados: Empleado[];
   propiedades: Propiedad[];
@@ -196,6 +198,54 @@ export interface EstadoSimulacion {
   intervaloMs: number;
   periodosPorTick: number;
   ticks: number;
+}
+
+export interface UsuarioPerfil {
+  handle: string;
+  nombre: string;
+  creadoEn: string;
+  ultimoVisto: number;
+  empresas: string[];
+}
+
+export interface Sesion {
+  token: string;
+  usuario: UsuarioPerfil;
+}
+
+export interface Evento {
+  id: number;
+  periodo: number;
+  tipo: string;
+  descripcion: string;
+  handle: string | null;
+  empresa: string | null;
+}
+
+/** Subconjunto de empresa que devuelve el resumen de ausencia. */
+export interface EmpresaResumen {
+  nombre: string;
+  duenio: string | null;
+  esDeUsuario: boolean;
+  capital: number;
+  productividad: number;
+  capitalizacion: number;
+}
+
+export interface Resumen {
+  desde: number;
+  hasta: number;
+  periodos: number;
+  pibInicio: number;
+  pibFin: number;
+  productividadInicio: number;
+  productividadFin: number;
+  contaminacionInicio: number;
+  contaminacionFin: number;
+  indiceInicio: number;
+  indiceFin: number;
+  empresas: EmpresaResumen[];
+  eventos: Evento[];
 }
 
 export interface Prediccion {

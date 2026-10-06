@@ -109,3 +109,41 @@ A4, B4, C2, D2, E2 ─► F1 ─► F2 ─► F3 ─► F4   (exposición, persi
 - Predicción: **simulación aislada** sobre una copia del mundo.
 - La UI sigue sin importar código del backend: los tipos de `web/src/types.ts` son espejo
   de los DTOs de `src/server/`.
+
+## Simulación autónoma y usuarios (branch `feat/simulacion-autonoma-usuarios`)
+
+Segunda tanda: la economía corre sola haya o no clientes, con cuentas de usuario (handle +
+PIN) que manejan sus propias empresas y reciben un resumen de lo que pasó mientras no
+estaban. Issues en GitHub: **#41–#50** (tracker
+[#50](https://github.com/fakuuy/polimorfismo/issues/50)).
+
+| Código | Título | GitHub | Estado |
+| ------ | ------ | ------ | ------ |
+| G1 | Simulación autónoma (auto-start + cadencia) | [#41](https://github.com/fakuuy/polimorfismo/issues/41) | [x] |
+| G2 | Registro de eventos del mundo | [#42](https://github.com/fakuuy/polimorfismo/issues/42) | [x] |
+| G3 | Usuarios con handle + PIN | [#43](https://github.com/fakuuy/polimorfismo/issues/43) | [x] |
+| G4 | Sesiones y contexto de autenticación | [#44](https://github.com/fakuuy/polimorfismo/issues/44) | [x] |
+| G5 | Empresas de usuario: fundar y persistir | [#45](https://github.com/fakuuy/polimorfismo/issues/45) | [x] |
+| G6 | Adquirir empresas del sistema | [#46](https://github.com/fakuuy/polimorfismo/issues/46) | [x] |
+| G7 | Resumen de ausencia | [#47](https://github.com/fakuuy/polimorfismo/issues/47) | [x] |
+| G8 | UI: login, mis empresas y resumen | [#48](https://github.com/fakuuy/polimorfismo/issues/48) | [x] |
+| G9 | Tests + docs | [#49](https://github.com/fakuuy/polimorfismo/issues/49) | [x] |
+
+### Mapa de dependencias
+
+```
+G1 (autónoma)   G2 (eventos)   G3 ─► G4 ─► G5 ─► G6 ─► G7 ─► G8 ─► G9
+```
+
+### Decisiones
+
+- Login **handle + PIN** (hash con `Bun.password`); sesiones con token `Bearer` en memoria.
+- Los usuarios pueden **fundar** empresas y **adquirir** las del sistema.
+- Cadencia por env `POLIMORFISMO_TICK_MS` (default **30000 ms**); `POLIMORFISMO_SIM_AUTOSTART=0`
+  la desactiva.
+- El resumen de ausencia combina **métricas** (PIB, productividad, contaminación, índice) +
+  **eventos** (fundaciones, adquisiciones, altas de usuario).
+
+> El modelo de sector/objetivo (épica B) sigue en `docs/issues.md` y en el stash
+> `WIP B1: sector + catalogo` del branch anterior; acá las empresas de usuario todavía no
+> eligen sector.
