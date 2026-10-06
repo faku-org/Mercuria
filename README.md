@@ -78,6 +78,7 @@ Detalle del modelo económico en [docs/economia.md](docs/economia.md).
 
 | Documento                                    | Contenido                                                             |
 | -------------------------------------------- | --------------------------------------------------------------------- |
+| [docs/guia-para-el-docente.md](docs/guia-para-el-docente.md) | Guía completa del sistema para un docente de programación. |
 | [docs/organizacion.md](docs/organizacion.md) | Carpetas, capas y reglas de dependencia.                              |
 | [docs/convenciones.md](docs/convenciones.md) | Nombres, exports y cómo agregar un módulo.                            |
 | [docs/dominio.md](docs/dominio.md)           | Clases del dominio y su estado.                                       |

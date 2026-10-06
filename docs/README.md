@@ -4,6 +4,7 @@
 
 | Documento                            | Contenido                                                                                   |
 | ------------------------------------ | ------------------------------------------------------------------------------------------- |
+| [guia-para-el-docente.md](./guia-para-el-docente.md) | Explicación completa del sistema para un docente de programación (consigna, POO, capas, economía, tests y rúbrica). |
 | [organizacion.md](./organizacion.md) | Cómo está organizado el repositorio: carpetas, capas y reglas de dependencia.               |
 | [convenciones.md](./convenciones.md) | Cómo debe estructurarse el código: nombres, archivos, exports y pasos para sumar un módulo. |
 | [dominio.md](./dominio.md)           | Modelo de dominio: clases existentes, sus campos y estado de cada módulo.                   |
