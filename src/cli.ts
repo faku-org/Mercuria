@@ -7,12 +7,19 @@ import EmpleadoFijo, { SUELDO_MENSUAL } from "./domain/EmpleadoFijo";
 import EmpleadoPorHora from "./domain/EmpleadoPorHora";
 import Vendedor from "./domain/Vendedor";
 import { formatearMoneda, imprimirNomina } from "./services/nomina";
-import empleadosDemo from "./fixtures/empleadosBase";
+import empleadosDemo, { empresaDemo } from "./fixtures/empleadosBase";
+import { nacionPrincipal } from "./fixtures/nacionesBase";
+import { california } from "./fixtures/estadosBase";
+import leyesBase, { leyesGlobales } from "./fixtures/leyesBase";
 
-const empresa = new Empresa("Empresa Demo", 1, [], 0, []);
+// Empresa propia de la CLI, ubicada donde rigen las leyes de prueba.
+const empresa = new Empresa("Empresa CLI", 2, [], 0, [], {
+  nacion: nacionPrincipal,
+  estado: california,
+});
 
 let empleados: Empleado[] = [];
-let proximoId = 1;
+let proximoId = 100;
 let entradaCerrada = false;
 
 /**
@@ -51,16 +58,12 @@ function registrar(empleado: Empleado, nombre: string): void {
 }
 
 function verNomina(): void {
-  imprimirNomina(empleados);
-}
-
-function siguienteId(lista: Empleado[]): number {
-  return lista.reduce((maximo, empleado) => Math.max(maximo, empleado.id), 0) + 1;
+  imprimirNomina(empleados, leyesGlobales);
 }
 
 function cargarDemo(): void {
   empleados = [...empleadosDemo];
-  proximoId = siguienteId(empleados);
+  proximoId = 100;
   console.log("Nómina de ejemplo cargada.");
   verNomina();
 }
@@ -98,6 +101,11 @@ function crearEmpleado(): void {
   }
 }
 
+function verEmpresaDemo(): void {
+  console.log(`Empresa: ${empresaDemo.nombre} — capital ${formatearMoneda(empresaDemo.capital)}`);
+  console.log(`Leyes vigentes en su ubicación: ${leyesBase.length}`);
+}
+
 function iniciarCLI(): void {
   console.log("=== Polimorfismo · Nómina ===");
 
@@ -108,6 +116,7 @@ function iniciarCLI(): void {
     console.log("2) Crear empleado");
     console.log("3) Ver nómina actual");
     console.log("4) Vaciar nómina");
+    console.log("5) Ver empresa demo");
     console.log("0) Salir");
 
     const opcion = pedirLinea("Opción: ");
@@ -125,8 +134,11 @@ function iniciarCLI(): void {
         break;
       case "4":
         empleados = [];
-        proximoId = 1;
+        proximoId = 100;
         console.log("Nómina vaciada.");
+        break;
+      case "5":
+        verEmpresaDemo();
         break;
       case "0":
         salir = true;
@@ -147,12 +159,12 @@ function obtenerArgv(): string[] {
 function main(): void {
   if (obtenerArgv().includes("--demo")) {
     console.log("=== Polimorfismo · Demo de nómina ===");
-    imprimirNomina(empleadosDemo);
+    imprimirNomina(empleadosDemo, leyesGlobales);
     return;
   }
 
   iniciarCLI();
 }
 
-export { iniciarCLI, cargarDemo, verNomina, crearEmpleado };
+export { iniciarCLI, cargarDemo, verNomina, crearEmpleado, verEmpresaDemo };
 export default main;

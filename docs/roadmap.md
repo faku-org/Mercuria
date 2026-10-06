@@ -8,10 +8,7 @@ Checklist de trabajo. `[x]` = hecho, `[ ]` = pendiente.
 - [x] Empleado por hora: cobra según la cantidad de horas trabajadas
 - [x] Vendedor: cobra un sueldo base más una comisión por ventas
 - [x] Clase `Empleado` con método `calcularSueldo()`
-- [x] Tres clases que hereden de `Empleado`:
-  - [x] `EmpleadoFijo`
-  - [x] `EmpleadoPorHora`
-  - [x] `Vendedor`
+- [x] Tres clases que hereden de `Empleado`: `EmpleadoFijo`, `EmpleadoPorHora`, `Vendedor`
 - [x] Sobrescribir `calcularSueldo()` en cada subclase
 - [x] Crear varios empleados de distintos tipos en un mismo array
 - [x] Recorrer el array y ejecutar `calcularSueldo()` en cada empleado
@@ -22,77 +19,78 @@ Checklist de trabajo. `[x]` = hecho, `[ ]` = pendiente.
 
 - [x] Clase con nombre, id, capital, idioma, población y leyes
 - [x] Servicio `obtenerNaciones()` en `services/naciones.ts`
-- [ ] Registrar y aplicar las leyes propias de la nación
-- [ ] Poblar naciones de prueba en `fixtures/`
+- [x] Registrar las leyes propias de la nación (`registrarLey`)
+- [x] Aplicar las leyes de la nación (`factorLeyes`)
+- [x] Poblar naciones de prueba en `fixtures/` (United States, Uruguay)
 
 ### Leyes — `domain/Ley.ts`
 
 - [x] Clase con nombre, id, descripción, `afecta` y `activa`
-- [ ] Modelar el efecto (positivo o negativo) y su magnitud
-- [ ] Aplicar la ley sobre sueldos, empresas y AI
-- [ ] Implementar "afecta a todas las naciones" (hoy `TODO` en el constructor)
+- [x] Modelar el efecto (positivo/negativo), la magnitud y el objetivo
+- [x] Aplicar la ley sobre sueldos, propiedades y AI
+- [x] Implementar "afecta a todas las naciones" (`alcance: "global"`)
 
 ### Estados — `domain/Estado.ts`
 
 - [x] Clase que hereda de `Nacion` con leyes de tipo `LeyEstatal`
-- [ ] Resolver prioridad entre leyes de nación y de estado
+- [x] Resolver prioridad entre leyes de nación y de estado
 - [x] Asociar cada estado a su nación (`nacion: Nacion`)
 
 ### Propiedades — `domain/Propiedad.ts`
 
-- [ ] Clase con nombre, precio, ubicación y dueño
-- [ ] Operaciones de compra y venta
-- [ ] Aplicar leyes sobre precios y límite de propiedades
+- [x] Clase con nombre, precio, ubicación y dueño
+- [x] Operaciones de compra y venta
+- [x] Aplicar leyes sobre precios y límite de propiedades
 
 ### AI — `domain/AI.ts`
 
-- [ ] Entidad con propiedades, empleados y empresas
-- [ ] Sueldo de la AI afectado por leyes
-- [ ] Validar que una AI siempre fue creada por una empresa
+- [x] Entidad con propiedades, empleados y empresas
+- [x] Sueldo de la AI afectado por leyes
+- [x] Validar que una AI siempre fue creada por una empresa
 
 ### Agentes — `domain/Agente.ts`
 
-- [ ] Clase con sector asignado
-- [ ] Costo de uso según productividad y modelo
+- [x] Clase con sector asignado
+- [x] Costo de uso según productividad y modelo
 - [x] El agente hereda su AI matriz al crearse (`aiMatriz`) y queda registrado en `agentes`
-- [ ] Relación AI → sector → agentes
+- [x] Relación AI → sector → agentes (`agentesDeSector`)
 
 ### Identificadores — `domain/identificadores.ts`
 
 - [x] Iniciales automáticas desde el nombre o modelo (`iniciales()`)
 - [x] Fecha en formato `YYYY-MM-DD` (`fechaId()`)
-- [x] Estado: `<Nacion iniciales>-<id>` (ej: `US-vkvguk`)
-- [x] Agente: `<Modelo iniciales>-<id>` (ej: `CL-jel9nm`)
-- [x] Ley: `<Nacion iniciales>-<fecha>-<id>` (ej: `US-2026-10-06-6pcm30`)
-- [x] LeyEstatal: `<Nacion iniciales>-<Estado iniciales>-<fecha>-<id>` (ej: `US-CA-2026-10-06-9kqf5q`)
+- [x] Ids con formato para Estado, Agente, Ley y LeyEstatal
 
 ### Sueldo — `domain/Sueldo.ts`
 
 - [x] Clase con monto y flag `deduce`
 - [x] Exportar la clase
-- [ ] Diferenciar sueldo fijo de variable
-- [ ] Aplicar leyes de nación/estado al cálculo
+- [x] Diferenciar sueldo fijo de variable (`tipo`)
+- [x] Aplicar leyes de nación/estado al cálculo (`conLeyes`)
 
 ### Empresa — `domain/Empresa.ts`
 
 - [x] Clase con nombre, id, empleados, capital y propiedades
-- [ ] Tipar `propiedades` como `Propiedad[]` (hoy `string[]`)
-- [ ] Jerarquía jefe → equipo de empleados
-- [ ] Aplicar leyes de nación/estado
-- [ ] Vincular empresa con su AI
+- [x] Tipar `propiedades` como `Propiedad[]`
+- [x] Jerarquía jefe → equipo de empleados (`Jefe.supervisar`, `costoEquipo`)
+- [x] Aplicar leyes de nación/estado (`factorLeyes`)
+- [x] Vincular empresa con su AI (`crearAI`, `vincularAI`)
 
 ## Técnico / infraestructura
 
 - [x] Reestructurar a `src/` (`domain/`, `services/`, `fixtures/`)
 - [x] Sacar `obtenerNaciones()` de `Nacion.ts` a un servicio
-- [x] Agregar `.gitignore` (node_modules y demás)
-- [x] Agregar `tsconfig.json` (strict)
-- [x] Agregar scripts en `package.json`
-- [x] Corregir imports y ciclos con `import type`
+- [x] Agregar `.gitignore`, `tsconfig.json` (strict) y scripts en `package.json`
 - [x] Dejar `tsc --noEmit` y `oxlint` en verde
 - [x] Usar `Sueldo` en el cálculo de `Empleado`
-- [x] Armar el caso de uso en `src/index.ts`
-- [x] CLI interactiva para crear y listar empleados (`src/cli.ts`)
-- [x] Script `bun run demo` con nómina de ejemplo sin interacción
-- [ ] (Opcional) agregar tests
-- [ ] UI (más adelante)
+- [x] CLI interactiva + `bun run demo`
+- [x] Tests del dominio (`bun test`)
+- [x] API HTTP con Elysia (`src/server/`)
+- [x] UI web base (React 19 + Vite + TailwindCSS v4, `web/`)
+
+## Pendiente
+
+- [ ] UI: formularios de edición y gráficos (hoy es de lectura + acciones puntuales)
+- [ ] Persistencia (hoy el mundo vive en memoria y `POST /api/reiniciar` lo restaura)
+- [ ] Leyes con múltiples objetivos a la vez (hoy una ley apunta a un objetivo)
+- [ ] Exportar/importar el estado del mundo (JSON)

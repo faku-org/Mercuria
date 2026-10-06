@@ -1,14 +1,13 @@
 # Modelo de dominio
 
 Descripción de las clases que viven en `src/domain/`, con sus campos reales tal como
-están en el código hoy. Los estados son: **implementada** (con lógica), **estructura**
-(solo campos/constructor) o **pendiente** (archivo placeholder).
+están en el código hoy. Todas las clases están **implementadas**.
 
 ## Núcleo
 
 ### Persona — `domain/Persona.ts`
 
-Clase base de las personas. **Implementada (estructura).**
+Clase base de las personas.
 
 | Campo             | Tipo      |
 | ----------------- | --------- |
@@ -22,153 +21,166 @@ Clase base de las personas. **Implementada (estructura).**
 
 ### Empleado — `domain/Empleado.ts`
 
-Hereda de `Persona`. **Implementada.**
+Hereda de `Persona`.
 
 - Campos propios: `sueldo: number`, `id: number`, `empresa: Empresa`.
-- Constructor: `(sueldo, nombre, id, empresa)`.
-- Método `calcularSueldo(): number` que devuelve el `sueldo` base; las subclases lo
-  sobrescriben.
+- `calcularSueldo(): number` devuelve el sueldo base; las subclases lo sobrescriben.
+- `tipoSueldo(): "fijo" | "variable"` — las subclases variables lo sobrescriben.
+- `sueldoDetallado(): Sueldo` — el sueldo base como objeto de dominio.
+- `sueldoConLeyes(leyesGlobales?): Sueldo` — aplica las leyes de la empresa
+  (`empresa.factorLeyes("sueldo")`) más las globales.
 
 ### Subclases de Empleado
 
-| Clase             | Archivo                     | Regla de `calcularSueldo()`                  |
-| ----------------- | --------------------------- | -------------------------------------------- |
-| `EmpleadoFijo`    | `domain/EmpleadoFijo.ts`    | `$50.000` mensual (`SUELDO_MENSUAL`).        |
-| `EmpleadoPorHora` | `domain/EmpleadoPorHora.ts` | `horasTrabajadas × tarifaPorHora`.           |
-| `Vendedor`        | `domain/Vendedor.ts`        | `sueldo base + ventas × (comisión % / 100)`. |
+| Clase             | Archivo                     | Regla de `calcularSueldo()`                  | `tipoSueldo` |
+| ----------------- | --------------------------- | -------------------------------------------- | ------------ |
+| `EmpleadoFijo`    | `domain/EmpleadoFijo.ts`    | `$50.000` mensual (`SUELDO_MENSUAL`).        | `fijo`       |
+| `EmpleadoPorHora` | `domain/EmpleadoPorHora.ts` | `horasTrabajadas × tarifaPorHora`.           | `variable`   |
+| `Vendedor`        | `domain/Vendedor.ts`        | `sueldo base + ventas × (comisión % / 100)`. | `variable`   |
 
 ### Jefe — `domain/Jefe.ts`
 
-Hereda de `Empleado`. **Estructura.**
+Hereda de `Empleado`.
 
 - Campos propios: `departamento: string`, `equipo: Empleado[]`.
-- Hereda `calcularSueldo()` de `Empleado`.
+- `supervisar(empleado)` / `desvincular(empleado)`: mantiene el equipo a cargo.
+- `costoEquipo(): number`: suma de los sueldos base del equipo.
 
 ### Empresa — `domain/Empresa.ts`
 
-Entidad legal que agrupa empleados y propiedades. **Estructura.**
+Entidad legal que agrupa empleados y propiedades.
 
-- Campos: `nombre`, `id`, `empleados: Empleado[]`, `capital`, `propiedades: string[]`.
-- Pendiente: tipar `propiedades` como `Propiedad[]` e incorporar jerarquía y leyes.
+- Campos: `nombre`, `id`, `empleados: Empleado[]`, `capital`, `propiedades: Propiedad[]`,
+  `nacion?`, `estado?`, `jefe?`, `ai?`.
+- `factorLeyes(objetivo, leyesGlobales?)`: leyes del estado (o nación) + globales.
+- `contratar`, `despedir`, `designarJefe`, `nominaTotal`.
+- `puedeAdquirir(limite)`, `comprarPropiedad(propiedad)`, `venderPropiedad(propiedad)`.
+- `crearAI(nombre, modelo, sueldoBase)` / `vincularAI(ai)`.
 
 ### Sueldo — `domain/Sueldo.ts`
 
-Representa una remuneración. **Estructura.**
+Representa una remuneración.
 
-- Campos: `monto: number`, `deduce: boolean`.
-- Pendiente: distinguir sueldo fijo de variable y aplicar leyes.
+- Campos: `monto: number`, `deduce: boolean`, `tipo: "fijo" | "variable"`.
+- `conLeyes(factor): Sueldo` — devuelve un nuevo sueldo con el factor aplicado
+  (0.1 = +10%), redondeado a centavos.
 
 ## Naciones, estados y leyes
 
+### Ley — `domain/Ley.ts`
+
+- Campos: `nombre`, `id`, `descripcion`, `afecta: Nacion[]`, `activa`,
+  `efecto: "positivo" | "negativo"`, `magnitud: number`, `objetivo`, `alcance`,
+  `limite?`.
+- **`objetivo`** (`ObjetivoLey`): `"sueldo" | "empresa" | "propiedad" | "ai"`.
+- **`alcance`** (`AlcanceLey`): `"nacion" | "estado" | "global"`. Las leyes globales no
+  se registran en ninguna nación (aplican a todas) y se resuelven con
+  `factorLeyesGlobales(leyes, objetivo)`.
+- `factor()`: `+magnitud` si el efecto es positivo, `-magnitud` si es negativo.
+- `aplicaA(nacion)`, `activar()`, `desactivar()`.
+- El `id` usa las iniciales de la nación: `<Nacion iniciales>-<fecha>-<id>`.
+
 ### Nacion — `domain/Nacion.ts`
 
-**Estructura.**
-
-- Campos: `nombre`, `id` (generado aleatorio), `iniciales` (derivadas del nombre),
-  `capital`, `idioma`, `poblacion`, `leyes: Ley[]`.
-- Método: `getNombre(): string`.
-- El servicio `services/naciones.ts` expone `listarNaciones()` y `obtenerNaciones()`.
+- Campos: `nombre`, `id`, `iniciales`, `capital`, `idioma`, `poblacion`, `leyes: Ley[]`.
+- `registrarLey(ley)`, `leyesDe(objetivo)`, `factorLeyes(objetivo)`.
 
 ### Estado — `domain/Estado.ts`
 
-Hereda de `Nacion`. **Estructura.**
+Hereda de `Nacion`.
 
 - Campos propios: `override leyes: LeyEstatal[]`, `nacion: Nacion`.
-- Constructor: `(nombre, capital, idioma, poblacion, nacion)`.
-- El `id` usa las iniciales de su nación: `<Nacion iniciales>-<id>` (ej: `US-vkvguk`).
-  Las `iniciales` propias del estado siguen derivándose de su nombre (se usan en las
-  leyes estatales).
-
-### Ley — `domain/Ley.ts`
-
-**Estructura.**
-
-- Campos: `nombre`, `id` (generado con formato), `descripcion`, `afecta: Nacion[]`,
-  `activa: boolean`.
-- Constructor: `(nombre, descripcion, nacion)`; la nación se registra en `afecta`.
-- El `id` usa las iniciales de la nación: `<Nacion iniciales>-<fecha>-<id>`
-  (ej: `US-2026-10-06-6pcm30`).
-- Pendiente: modelar el **efecto** (positivo/negativo) y el concepto "afecta a todas
-  las naciones" (hoy hay un `TODO` en el constructor).
+- **Prioridad de leyes**: si el estado tiene leyes activas para el objetivo, mandan las
+  del estado; si no, se hereda el factor de la nación.
+- El `id` usa las iniciales de su nación: `<Nacion iniciales>-<id>`.
 
 ### LeyEstatal — `domain/LeyEstatal.ts`
 
-Hereda de `Ley`. **Estructura.**
+Hereda de `Ley`.
 
-- Campo propio: `estado: Estado[]`.
-- Constructor: `(nombre, descripcion, estado)`.
-- El `id` combina las iniciales de la nación y del estado:
-  `<Nacion iniciales>-<Estado iniciales>-<fecha>-<id>` (ej: `US-CA-2026-10-06-9kqf5q`).
+- Campo propio: `estado: Estado[]`. El constructor fuerza `alcance: "estado"`.
+- El `id` combina iniciales de nación y estado:
+  `<Nacion iniciales>-<Estado iniciales>-<fecha>-<id>`.
+
+## Propiedades
+
+### Propiedad — `domain/Propiedad.ts`
+
+- Campos: `nombre`, `id`, `precio`, `nacion`, `estado?`, `dueño: Persona | Empresa | null`.
+- `ubicacionFiscal`: el estado si lo hay, si no la nación.
+- `precioConLeyes(leyesGlobales?)`: precio ajustado por las leyes del lugar.
+- `vender(nuevoDueño)`: cambia el título (la parte económica la maneja la empresa).
 
 ## AI y agentes
 
 ### AI — `domain/AI.ts`
 
-**Estructura.**
-
-- Campos: `nombre`, `modelo`, `id` (aleatorio), `empresaMatriz`, `asi`, `rogue`,
-  `agentes: Agente[]`.
-- Los agentes creados a partir de una AI se registran en su lista `agentes`.
+- Campos: `nombre`, `modelo`, `id`, `empresaMatriz: Empresa`, `sueldoBase`, `asi`,
+  `rogue`, `agentes: Agente[]`, `propiedades: Propiedad[]`, `empleados: Empleado[]`,
+  `empresas: Empresa[]`.
+- El constructor **exige** una empresa matriz (toda AI nace de una empresa).
+- `sueldoConLeyes(leyesGlobales?)`: sueldo afectado por las leyes (objetivo `"ai"`).
+- `agentesDeSector(sector)`.
+- El `id` usa las iniciales del modelo: `<Modelo iniciales>-<id>`.
 
 ### Agente — `domain/Agente.ts`
 
-Hereda de `AI`. **Estructura.**
+Hereda de `AI`.
 
-- Campo propio: `aiMatriz: AI`.
-- Constructor: `(nombre, modelo, aiMatriz, rogue?, asi?)`. Al crearse hereda de su AI
-  matriz la `empresaMatriz` y queda registrado en `aiMatriz.agentes`.
-- El `id` usa las iniciales de su modelo: `<Modelo iniciales>-<id>` (ej: `CL-jel9nm`).
-
-## Módulos pendientes
-
-Archivos placeholder (aún sin implementar). El detalle del alcance está en
-`requirements.md` y el estado en `roadmap.md`.
-
-| Clase     | Archivo               | Idea general                                                                  |
-| --------- | --------------------- | ----------------------------------------------------------------------------- |
-| Propiedad | `domain/Propiedad.ts` | Objeto comprable/vendible, con precio, ubicación y dueño; afectado por leyes. |
+- Campos propios: `aiMatriz: AI`, `sector: string`, `productividad: number`.
+- Al crearse hereda la `empresaMatriz` de su AI matriz y queda registrado en
+  `aiMatriz.agentes`.
+- `costoUso()`: `costoModelo(modelo) × productividad`. `costoModelo` matchea por
+  subcadena (`"Claude 3.5"` → `claude`).
 
 ## Identificadores
 
-Los ids con formato se arman con las utilidades de `domain/identificadores.ts`:
+Utilidades en `domain/identificadores.ts`:
 
-- `iniciales(texto)`: varias palabras usan la primera letra de cada una
-  (`"United States"` → `US`); una sola palabra usa sus dos primeras letras
-  (`"Claude"` → `CL`).
-- `fechaId(fecha?)`: fecha en formato `YYYY-MM-DD`.
-- `idAleatorio(largo?)`: sufijo aleatorio corto en base 36.
+- `iniciales(texto)`: varias palabras → primera letra de cada una (`"United States"` →
+  `US`); una sola palabra → sus dos primeras letras (`"Claude"` → `CL`).
+- `fechaId(fecha?)`: `YYYY-MM-DD`.
+- `idAleatorio(largo?)`: sufijo aleatorio base 36.
 
-| Entidad    | Formato                                              | Ejemplo                   |
-| ---------- | ---------------------------------------------------- | ------------------------- |
-| Estado     | `<Nacion iniciales>-<id>`                            | `US-vkvguk`               |
-| Agente     | `<Modelo iniciales>-<id>`                            | `CL-jel9nm`               |
-| Ley        | `<Nacion iniciales>-<fecha>-<id>`                    | `US-2026-10-06-6pcm30`    |
-| LeyEstatal | `<Nacion iniciales>-<Estado iniciales>-<fecha>-<id>` | `US-CA-2026-10-06-9kqf5q` |
+| Entidad     | Formato                                              | Ejemplo                   |
+| ----------- | ---------------------------------------------------- | ------------------------- |
+| Estado      | `<Nacion iniciales>-<id>`                            | `US-vkvguk`               |
+| Ley         | `<Nacion iniciales>-<fecha>-<id>`                    | `US-2026-10-06-6pcm30`    |
+| LeyEstatal  | `<Nacion iniciales>-<Estado iniciales>-<fecha>-<id>` | `US-CA-2026-10-06-9kqf5q` |
+| Propiedad   | `<Nacion iniciales>-PROP-<id>`                       | `US-PROP-3f9a1c`          |
+| AI / Agente | `<Modelo iniciales>-<id>`                            | `CL-jel9nm`               |
 
 ## Servicios — `src/services/`
 
-| Función                     | Archivo                | Descripción                                        |
-| --------------------------- | ---------------------- | -------------------------------------------------- |
-| `listarNaciones(naciones)`  | `services/naciones.ts` | Imprime por consola y devuelve las naciones.       |
-| `obtenerNaciones(naciones)` | `services/naciones.ts` | Versión `async` que delega en `listarNaciones`.    |
-| `calcularNomina(empleados)` | `services/nomina.ts`   | Calcula el sueldo de cada empleado (polimorfismo). |
-| `totalNomina(empleados)`    | `services/nomina.ts`   | Suma de todos los sueldos.                         |
-| `imprimirNomina(empleados)` | `services/nomina.ts`   | Imprime la nómina con su total.                    |
-| `formatearMoneda(monto)`    | `services/nomina.ts`   | Formatea un monto en formato es-AR.                |
+| Función                                       | Archivo       | Descripción                                              |
+| --------------------------------------------- | ------------- | -------------------------------------------------------- |
+| `calcularNomina(empleados, leyes?)`           | `nomina.ts`   | Sueldo base, factor de leyes y sueldo final de cada uno. |
+| `totalNomina(empleados)`                      | `nomina.ts`   | Suma de los sueldos base.                                |
+| `totalNominaFinal(empleados, leyes?)`         | `nomina.ts`   | Suma de los sueldos finales.                             |
+| `formatearMoneda(monto)`                      | `nomina.ts`   | Formatea en es-AR.                                       |
+| `imprimirNomina(empleados, leyes?)`           | `nomina.ts`   | Imprime la nómina con totales.                           |
+| `factorTotal(ubicacion, objetivo, globales?)` | `leyes.ts`    | Factor de leyes de una ubicación + globales.             |
+| `leyesActivas(leyes, objetivo?)`              | `leyes.ts`    | Filtra leyes activas por objetivo.                       |
+| `resumenLeyes(leyes)`                         | `leyes.ts`    | Cantidad y factor total por objetivo.                    |
+| `listarNaciones(naciones)`                    | `naciones.ts` | Imprime por consola y devuelve las naciones.             |
+| `obtenerNaciones(naciones)`                   | `naciones.ts` | Versión que delega en `listarNaciones`.                  |
 
 ## CLI — `src/cli.ts`
 
-CLI interactiva (`bun run start`) que permite cargar la nómina de ejemplo, crear
-empleados (fijo, por hora o vendedor), ver la nómina actual y vaciarla. Con la bandera
-`--demo` (`bun run demo`) imprime la nómina de ejemplo sin interacción. `src/index.ts`
-es el punto de entrada y delega en `src/cli.ts`.
+CLI interactiva (`bun run start`): cargar la nómina de ejemplo, crear empleados (fijo, por
+hora o vendedor), ver la nómina (con leyes), vaciarla y ver la empresa demo. Con `--demo`
+(`bun run demo`) imprime la nómina de ejemplo sin interacción.
 
 ## Datos de prueba — `src/fixtures/`
 
-| Export                    | Archivo                     | Contenido                                                                          |
-| ------------------------- | --------------------------- | ---------------------------------------------------------------------------------- |
-| `naciones` (default)      | `fixtures/nacionesBase.ts`  | 1 nación de ejemplo: United States.                                                |
-| `nacionPrincipal` (named) | `fixtures/nacionesBase.ts`  | La nación anterior, para reutilizarla (por ejemplo, en `leyesBase`).               |
-| `leyes` (default)         | `fixtures/leyesBase.ts`     | 3 leyes de ejemplo: Protección de Datos, Propiedad Intelectual, Seguridad Laboral. |
-| `empleadosDemo` (default) | `fixtures/empleadosBase.ts` | 3 empleados de ejemplo (fijo, por hora y vendedor).                                |
-| `empresaDemo` (named)     | `fixtures/empleadosBase.ts` | Empresa usada por los empleados de ejemplo.                                        |
+| Export                                | Archivo              | Contenido                                                |
+| ------------------------------------- | -------------------- | -------------------------------------------------------- |
+| `nacionPrincipal`, `nacionSecundaria` | `nacionesBase.ts`    | United States y Uruguay.                                 |
+| `california`, `montevideo`            | `estadosBase.ts`     | Estados de cada nación.                                  |
+| `leyes` (default)                     | `leyesBase.ts`       | 6 leyes nacionales/estatales + 1 global, ya registradas. |
+| `leyesGlobales` (named)               | `leyesBase.ts`       | Solo la ley de alcance global.                           |
+| `empleadosDemo` (default)             | `empleadosBase.ts`   | 4 empleados (fijo, por hora, vendedor y jefe).           |
+| `empresaDemo` (named)                 | `empleadosBase.ts`   | Empresa Demo (nación US, estado California) con su jefe. |
+| `propiedades` (default)               | `propiedadesBase.ts` | 4 propiedades (una ya de Ana Fija).                      |
+| `agentesDemo` (default)               | `aiBase.ts`          | 3 agentes de la IA Orion (soporte, ventas, datos).       |
+| `aiCentral` (named)                   | `aiBase.ts`          | La IA de la Empresa Demo.                                |

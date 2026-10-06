@@ -7,21 +7,30 @@ siga siendo navegable a medida que crece.
 
 ```
 polimorfismo/
-├── src/
-│   ├── domain/        Clases del modelo de dominio (una clase por archivo)
-│   ├── services/      Casos de uso y operaciones sobre el dominio
-│   ├── fixtures/      Datos de prueba / semilla (listas de objetos)
-│   ├── cli.ts         CLI interactiva de nómina
-│   ├── index.ts       Punto de entrada (antes Main.ts)
-│   └── debug.ts       Espacio para pruebas manuales
-├── docs/              Documentación del proyecto (este directorio)
-├── .gitignore
-├── .oxlintrc.json
-├── package.json
-├── tsconfig.json
-├── bun.lock
-├── README.md
-└── requirements.md
+├── src/                     Backend / dominio
+│   ├── domain/              Clases del modelo (una clase por archivo)
+│   ├── services/            Casos de uso sobre el dominio
+│   ├── fixtures/            Datos de prueba / semilla
+│   ├── server/              API HTTP
+│   │   ├── index.ts         Entrada del servidor (listen)
+│   │   ├── app.ts           Rutas Elysia
+│   │   └── mundo.ts         Estado del mundo + DTOs + acciones
+│   ├── cli.ts               CLI interactiva
+│   ├── index.ts             Punto de entrada de la CLI
+│   └── debug.ts             Espacio para pruebas manuales
+├── tests/                   Tests del dominio
+├── web/                     Frontend (workspace de Bun)
+│   ├── src/
+│   │   ├── App.tsx          Shell + navegación
+│   │   ├── api.ts           Cliente de la API
+│   │   ├── types.ts         Tipos espejo de los DTOs
+│   │   ├── components/      UI reutilizable
+│   │   └── views/           Vistas por pestaña
+│   ├── index.html
+│   └── vite.config.ts
+├── docs/                    Documentación (este directorio)
+├── package.json             Scripts + workspaces (["web"])
+└── tsconfig.json
 ```
 
 ## Capas y responsabilidad
@@ -29,30 +38,35 @@ polimorfismo/
 | Carpeta         | Responsabilidad                                                       | Ejemplos                               |
 | --------------- | --------------------------------------------------------------------- | -------------------------------------- |
 | `src/domain/`   | Modelar entidades. Solo estado + comportamiento propio de la entidad. | `Persona`, `Empleado`, `Nacion`, `Ley` |
-| `src/services/` | Orquestar el dominio: listar, calcular, aplicar leyes, persistir.     | `naciones.ts`                          |
-| `src/fixtures/` | Instanciar datos de ejemplo para pruebas o demos.                     | `leyesBase.ts`                         |
+| `src/services/` | Orquestar el dominio: listar, calcular, aplicar leyes.                | `nomina.ts`, `leyes.ts`                |
+| `src/fixtures/` | Instanciar datos de ejemplo para pruebas o demos.                     | `leyesBase.ts`, `aiBase.ts`            |
+| `src/server/`   | Exponer el dominio por HTTP y mapear a DTOs JSON.                     | `mundo.ts`, `app.ts`                   |
 | `src/` (raíz)   | Punto de entrada y scripts sueltos.                                   | `index.ts`, `debug.ts`                 |
+| `tests/`        | Tests ejecutados con `bun test`.                                      | `dominio.test.ts`                      |
+| `web/`          | Interfaz de usuario (consume la API por HTTP).                        | `App.tsx`, `views/`                    |
 
 ## Regla de dependencia (dirección de los imports)
 
 ```
-index.ts / debug.ts
+index.ts / cli.ts / server/          web/
+        │                              │  (HTTP)
+        ▼                              ▼
+   services/ ──────► domain/      /api/*
         │
         ▼
-   services/  ──────►  domain/
-        │
-        ▼
-   fixtures/  ──────►  domain/
+   fixtures/ ──────► domain/
 ```
 
-- `domain/` **no** puede importar de `services/` ni de `fixtures/`.
+- `domain/` **no** puede importar de `services/`, `fixtures/` ni `server/`.
 - `services/` y `fixtures/` pueden importar de `domain/`.
-- `index.ts` orquesta todo.
+- `server/` importa de `fixtures/` y `services/` (nunca al revés).
+- `web/` **no** importa código del backend: se comunica solo por HTTP. Sus tipos en
+  `web/src/types.ts` son espejo de los DTOs de `server/mundo.ts`.
 
 ### Imports de solo tipo
 
-Para no crear ciclos en tiempo de ejecución (por ejemplo `Nacion` ↔ `Ley`), cuando un
-import se usa **únicamente como tipo** se marca con `import type`:
+Para no crear ciclos en tiempo de ejecución (por ejemplo `Nacion` ↔ `Ley`, `AI` ↔
+`Agente`), cuando un import se usa **únicamente como tipo** se marca con `import type`:
 
 ```ts
 import type Nacion from "./Nacion"; // solo tipo -> se borra al compilar
@@ -60,6 +74,18 @@ import Ley from "./Ley"; // valor -> se mantiene (extends, new, etc.)
 ```
 
 Esto es obligatorio en este repo porque `tsconfig.json` activa `verbatimModuleSyntax`.
+
+## Dónde va cada cosa nueva
+
+| Si querés agregar...        | Va en...                                             |
+| --------------------------- | ---------------------------------------------------- |
+| Una clase del modelo        | `src/domain/MiClase.ts`                              |
+| Un cálculo sobre el dominio | `src/services/miServicio.ts`                         |
+| Datos de ejemplo            | `src/fixtures/miBase.ts`                             |
+| Un endpoint nuevo           | `src/server/app.ts` (+ DTO en `mundo.ts`)            |
+| Una pantalla o vista nueva  | `web/src/views/MiVista.tsx` (+ pestaña en `App.tsx`) |
+| Un componente reutilizable  | `web/src/components/`                                |
+| Un test                     | `tests/miArea.test.ts`                               |
 
 ## Por qué `src/domain` y no `data`
 

@@ -1,5 +1,6 @@
 import Empleado from "./Empleado";
 import type Empresa from "./Empresa";
+import type { TipoSueldo } from "./Sueldo";
 
 class EmpleadoPorHora extends Empleado {
   horasTrabajadas: number;
@@ -19,6 +20,10 @@ class EmpleadoPorHora extends Empleado {
 
   override calcularSueldo(): number {
     return this.horasTrabajadas * this.tarifaPorHora;
+  }
+
+  override tipoSueldo(): TipoSueldo {
+    return "variable";
   }
 }
 

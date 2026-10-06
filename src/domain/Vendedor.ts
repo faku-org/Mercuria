@@ -1,5 +1,6 @@
 import Empleado from "./Empleado";
 import type Empresa from "./Empresa";
+import type { TipoSueldo } from "./Sueldo";
 
 class Vendedor extends Empleado {
   ventas: number;
@@ -20,6 +21,10 @@ class Vendedor extends Empleado {
 
   override calcularSueldo(): number {
     return this.sueldo + this.ventas * (this.porcentajeComision / 100);
+  }
+
+  override tipoSueldo(): TipoSueldo {
+    return "variable";
   }
 }
 

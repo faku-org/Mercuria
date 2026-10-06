@@ -59,6 +59,14 @@ export default listarNaciones;
 - Los archivos placeholder (módulos todavía sin implementar) llevan un comentario
   que indica que están pendientes y dónde está el detalle.
 
+## API y UI
+
+- **API** (`src/server/`): las rutas viven en `app.ts` y los DTOs + acciones en
+  `mundo.ts`. El dominio no conoce la API; el mapeo a JSON se hace en `mundo.ts`.
+- **UI** (`web/`): no importa código del backend. Sus tipos (`web/src/types.ts`) son
+  espejo de los DTOs y se accede por HTTP vía `web/src/api.ts`.
+- Iconografía siempre con `lucide-react` (nunca emojis). Paleta neutra con un solo acento.
+
 ## Cómo agregar un módulo nuevo (paso a paso)
 
 1. **Modelo**: crear `src/domain/MiClase.ts` con la clase y `export default`.
