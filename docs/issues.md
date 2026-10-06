@@ -1,7 +1,7 @@
 # Issues — Simulación en vivo y modelo realista
 
 Tablero de trabajo para la feature de **simulación en tiempo real**. Los issues viven en
-GitHub (repo [`fakuuy/polimorfismo`](https://github.com/fakuuy/polimorfismo/issues)) y acá
+GitHub (repo [`faku-org/Mercuria`](https://github.com/faku-org/Mercuria/issues)) y acá
 queda el plan **ordenado por dependencia**: un issue solo se empieza cuando sus
 dependencias están cerradas.
 
@@ -9,26 +9,26 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho.
 
 | Código | Issue | GitHub |
 | ------ | ----- | ------ |
-| A1 | Reloj de simulación en el servidor | [#21](https://github.com/fakuuy/polimorfismo/issues/21) |
-| A2 | Stream SSE /api/stream + bus de eventos | [#22](https://github.com/fakuuy/polimorfismo/issues/22) |
-| A3 | UI en vivo: barra de control + EventSource | [#23](https://github.com/fakuuy/polimorfismo/issues/23) |
-| A4 | Predicción por simulación aislada | [#24](https://github.com/fakuuy/polimorfismo/issues/24) |
-| B1 | Sector de la empresa + catálogo | [#25](https://github.com/fakuuy/polimorfismo/issues/25) |
-| B2 | Objetivo de la empresa | [#26](https://github.com/fakuuy/polimorfismo/issues/26) |
-| B3 | Empleados productivos vs. plantilla | [#27](https://github.com/fakuuy/polimorfismo/issues/27) |
-| B4 | Productividad combinada | [#28](https://github.com/fakuuy/polimorfismo/issues/28) |
-| C1 | Catálogo de modelos de IA con curva | [#29](https://github.com/fakuuy/polimorfismo/issues/29) |
-| C2 | Adopción de modelos por las empresas | [#30](https://github.com/fakuuy/polimorfismo/issues/30) |
-| C3 | AIs rogue | [#31](https://github.com/fakuuy/polimorfismo/issues/31) |
-| D1 | EmpresaEstatal que provee recursos | [#32](https://github.com/fakuuy/polimorfismo/issues/32) |
-| D2 | Provisión de recursos en el ciclo | [#33](https://github.com/fakuuy/polimorfismo/issues/33) |
-| E1 | Cuota de mercado (clientes vs. población) | [#34](https://github.com/fakuuy/polimorfismo/issues/34) |
-| E2 | Beneficio a capital, PIB y cotización | [#35](https://github.com/fakuuy/polimorfismo/issues/35) |
-| F1 | GraphQL + DTOs de los campos nuevos | [#36](https://github.com/fakuuy/polimorfismo/issues/36) |
-| F2 | Persistencia SQLite de los campos nuevos | [#37](https://github.com/fakuuy/polimorfismo/issues/37) |
-| F3 | UI de los campos nuevos | [#38](https://github.com/fakuuy/polimorfismo/issues/38) |
-| F4 | Tests + docs del modelo en vivo | [#39](https://github.com/fakuuy/polimorfismo/issues/39) |
-| EPIC | Hilo de seguimiento | [#40](https://github.com/fakuuy/polimorfismo/issues/40) |
+| A1 | Reloj de simulación en el servidor | [#21](https://github.com/faku-org/Mercuria/issues/21) |
+| A2 | Stream SSE /api/stream + bus de eventos | [#22](https://github.com/faku-org/Mercuria/issues/22) |
+| A3 | UI en vivo: barra de control + EventSource | [#23](https://github.com/faku-org/Mercuria/issues/23) |
+| A4 | Predicción por simulación aislada | [#24](https://github.com/faku-org/Mercuria/issues/24) |
+| B1 | Sector de la empresa + catálogo | [#25](https://github.com/faku-org/Mercuria/issues/25) |
+| B2 | Objetivo de la empresa | [#26](https://github.com/faku-org/Mercuria/issues/26) |
+| B3 | Empleados productivos vs. plantilla | [#27](https://github.com/faku-org/Mercuria/issues/27) |
+| B4 | Productividad combinada | [#28](https://github.com/faku-org/Mercuria/issues/28) |
+| C1 | Catálogo de modelos de IA con curva | [#29](https://github.com/faku-org/Mercuria/issues/29) |
+| C2 | Adopción de modelos por las empresas | [#30](https://github.com/faku-org/Mercuria/issues/30) |
+| C3 | AIs rogue | [#31](https://github.com/faku-org/Mercuria/issues/31) |
+| D1 | EmpresaEstatal que provee recursos | [#32](https://github.com/faku-org/Mercuria/issues/32) |
+| D2 | Provisión de recursos en el ciclo | [#33](https://github.com/faku-org/Mercuria/issues/33) |
+| E1 | Cuota de mercado (clientes vs. población) | [#34](https://github.com/faku-org/Mercuria/issues/34) |
+| E2 | Beneficio a capital, PIB y cotización | [#35](https://github.com/faku-org/Mercuria/issues/35) |
+| F1 | GraphQL + DTOs de los campos nuevos | [#36](https://github.com/faku-org/Mercuria/issues/36) |
+| F2 | Persistencia SQLite de los campos nuevos | [#37](https://github.com/faku-org/Mercuria/issues/37) |
+| F3 | UI de los campos nuevos | [#38](https://github.com/faku-org/Mercuria/issues/38) |
+| F4 | Tests + docs del modelo en vivo | [#39](https://github.com/faku-org/Mercuria/issues/39) |
+| EPIC | Hilo de seguimiento | [#40](https://github.com/faku-org/Mercuria/issues/40) |
 
 ## Mapa de dependencias
 
@@ -115,19 +115,19 @@ A4, B4, C2, D2, E2 ─► F1 ─► F2 ─► F3 ─► F4   (exposición, persi
 Segunda tanda: la economía corre sola haya o no clientes, con cuentas de usuario (handle +
 PIN) que manejan sus propias empresas y reciben un resumen de lo que pasó mientras no
 estaban. Issues en GitHub: **#41–#50** (tracker
-[#50](https://github.com/fakuuy/polimorfismo/issues/50)).
+[#50](https://github.com/faku-org/Mercuria/issues/50)).
 
 | Código | Título | GitHub | Estado |
 | ------ | ------ | ------ | ------ |
-| G1 | Simulación autónoma (auto-start + cadencia) | [#41](https://github.com/fakuuy/polimorfismo/issues/41) | [x] |
-| G2 | Registro de eventos del mundo | [#42](https://github.com/fakuuy/polimorfismo/issues/42) | [x] |
-| G3 | Usuarios con handle + PIN | [#43](https://github.com/fakuuy/polimorfismo/issues/43) | [x] |
-| G4 | Sesiones y contexto de autenticación | [#44](https://github.com/fakuuy/polimorfismo/issues/44) | [x] |
-| G5 | Empresas de usuario: fundar y persistir | [#45](https://github.com/fakuuy/polimorfismo/issues/45) | [x] |
-| G6 | Adquirir empresas del sistema | [#46](https://github.com/fakuuy/polimorfismo/issues/46) | [x] |
-| G7 | Resumen de ausencia | [#47](https://github.com/fakuuy/polimorfismo/issues/47) | [x] |
-| G8 | UI: login, mis empresas y resumen | [#48](https://github.com/fakuuy/polimorfismo/issues/48) | [x] |
-| G9 | Tests + docs | [#49](https://github.com/fakuuy/polimorfismo/issues/49) | [x] |
+| G1 | Simulación autónoma (auto-start + cadencia) | [#41](https://github.com/faku-org/Mercuria/issues/41) | [x] |
+| G2 | Registro de eventos del mundo | [#42](https://github.com/faku-org/Mercuria/issues/42) | [x] |
+| G3 | Usuarios con handle + PIN | [#43](https://github.com/faku-org/Mercuria/issues/43) | [x] |
+| G4 | Sesiones y contexto de autenticación | [#44](https://github.com/faku-org/Mercuria/issues/44) | [x] |
+| G5 | Empresas de usuario: fundar y persistir | [#45](https://github.com/faku-org/Mercuria/issues/45) | [x] |
+| G6 | Adquirir empresas del sistema | [#46](https://github.com/faku-org/Mercuria/issues/46) | [x] |
+| G7 | Resumen de ausencia | [#47](https://github.com/faku-org/Mercuria/issues/47) | [x] |
+| G8 | UI: login, mis empresas y resumen | [#48](https://github.com/faku-org/Mercuria/issues/48) | [x] |
+| G9 | Tests + docs | [#49](https://github.com/faku-org/Mercuria/issues/49) | [x] |
 
 ### Mapa de dependencias
 
