@@ -1,17 +1,83 @@
 @import "tailwindcss";
 
+/*
+ * Mercuria · sistema de diseño
+ * Marca: Merriweather (títulos/marca) + Source Serif 4 (texto) + JetBrains Mono (números/IDs).
+ * Paleta de marca: #462C7D · #831C91 · #D552A3 · #FF70BF.
+ * Los tokens semánticos se redefinen por tema (claro / oscuro) más abajo.
+ */
 @theme {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-display: "Merriweather", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Paleta neutra sobria + un solo acento. */
-  --color-accent: #2f6feb;
-  --color-accent-soft: #eaf0fe;
-  --color-ink: #10141c;
-  --color-muted: #626d7d;
-  --color-line: #e6e9ef;
-  --color-surface: #ffffff;
-  --color-canvas: #f6f7f9;
+  /* Rampa de marca (fija en ambos temas). */
+  --color-brand-900: #462c7d;
+  --color-brand-700: #831c91;
+  --color-brand-500: #d552a3;
+  --color-brand-300: #ff70bf;
+
+  /* Tokens semánticos: valores del tema claro. */
+  --color-canvas: #f6f3fa;
+  --color-surface: #fdfcff;
+  --color-ink: #1c1526;
+  --color-muted: #6a6376;
+  --color-line: #e6e1ee;
+
+  --color-accent: #831c91;
+  --color-accent-strong: #462c7d;
+  --color-accent-soft: #f3e7f6;
+  --color-on-accent: #ffffff;
+
+  --color-positive: #047857;
+  --color-positive-soft: #ecfdf5;
+  --color-negative: #be123c;
+  --color-negative-soft: #fff1f2;
+}
+
+:root {
+  color-scheme: light;
+}
+
+/* Tema oscuro. Se aplica por atributo explícito o por preferencia del sistema. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #150f1f;
+  --color-surface: #1f1829;
+  --color-ink: #f4eff8;
+  --color-muted: #a79fb4;
+  --color-line: #322941;
+
+  --color-accent: #c77de0;
+  --color-accent-strong: #ff70bf;
+  --color-accent-soft: #2c2340;
+  --color-on-accent: #1a1226;
+
+  --color-positive: #6ee7b7;
+  --color-positive-soft: #10362a;
+  --color-negative: #fda4af;
+  --color-negative-soft: #3d1723;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-canvas: #150f1f;
+    --color-surface: #1f1829;
+    --color-ink: #f4eff8;
+    --color-muted: #a79fb4;
+    --color-line: #322941;
+
+    --color-accent: #c77de0;
+    --color-accent-strong: #ff70bf;
+    --color-accent-soft: #2c2340;
+    --color-on-accent: #1a1226;
+
+    --color-positive: #6ee7b7;
+    --color-positive-soft: #10362a;
+    --color-negative: #fda4af;
+    --color-negative-soft: #3d1723;
+  }
 }
 
 html,
@@ -25,8 +91,34 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Merriweather para jerarquía de títulos; el resto del texto va en el serif de cuerpo. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
 }
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Respeta la preferencia de movimiento reducido (skill de taste, sección 6.B). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

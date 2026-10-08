@@ -15,12 +15,13 @@ Con `web/dist` presente, **un solo puerto** sirve la UI en `/` y la API en `/gra
 
 ## Endpoint
 
-| Ruta             | Qué es                                                  |
-| ---------------- | ------------------------------------------------------- |
-| `GET /`          | `web/dist/index.html` (la UI).                          |
-| `GET /assets/*`  | Bundle de la UI (JS/CSS).                               |
-| `GET /api/salud` | Health check (`{ ok, servicio, web }`).                 |
-| `ALL /graphql`   | GraphQL: queries, mutations y GraphiQL en el navegador. |
+| Ruta              | Qué es                                                  |
+| ----------------- | ------------------------------------------------------- |
+| `GET /`           | `web/dist/index.html` (la UI).                          |
+| `GET /assets/*`   | Bundle de la UI (JS/CSS).                               |
+| `GET /api/salud`  | Health check (`{ ok, servicio, web }`).                 |
+| `GET /api/stream` | SSE: empuja el `Mundo` en cada tick o mutación.         |
+| `ALL /graphql`    | GraphQL: queries, mutations y GraphiQL en el navegador. |
 
 ## Queries
 
@@ -39,6 +40,11 @@ Con `web/dist` presente, **un solo puerto** sirve la UI en `/` y la API en `/gra
 | `resumenLeyes` | Cantidad y factor total por objetivo.                           |
 | `ais`          | IAs con agentes, sueldo y empresas adquiridas.                  |
 | `propiedades`  | Propiedades con precio ajustado por leyes y dueño.              |
+| `estadoSimulacion` | Reloj en vivo: play/pausa, velocidad, períodos/tick y ticks. |
+| `predecir(periodos)` | Proyección por simulación aislada (no toca el estado real). |
+| `yo` | Usuario de la sesión (o `null`). |
+| `resumen` | Resumen de ausencia del usuario: métricas + eventos + sus empresas. |
+| `eventos(desde)` | Bitácora de eventos del mundo. |
 
 > Los campos de `Mundo` también existen en la raíz del esquema, así la UI puede pedir
 > exactamente lo que necesita en un solo round-trip.
@@ -55,9 +61,18 @@ Con `web/dist` presente, **un solo puerto** sirve la UI en `/` y la API en `/gra
 | `crearAgente(input)`                   | Alta de agente de la IA.                                    |
 | `comprarPropiedad(id)`                 | La empresa compra una propiedad.                            |
 | `reiniciar`                            | Vuelve a la semilla guardada en SQLite.                     |
+| `iniciarSimulacion(intervaloMs, periodosPorTick)` | Arranca el reloj en vivo.                       |
+| `pausarSimulacion`                     | Pausa el reloj y persiste lo pendiente.                     |
+| `ajustarSimulacion(intervaloMs, periodosPorTick)` | Cambia la velocidad sin tocar play/pausa.        |
+| `registrar(handle, pin, nombre)`       | Crea una cuenta y devuelve una sesión.                     |
+| `login(handle, pin)`                   | Inicia sesión y devuelve un token.                        |
+| `logout`                               | Cierra la sesión del token actual.                        |
+| `fundarEmpresa(nombre, capitalInicial)` | Crea una empresa propia del usuario.                    |
+| `adquirirComoUsuario(objetivo, comprador)` | Una empresa del usuario compra otra del sistema.      |
 
 Las mutations devuelven `Resultado { ok, motivo, detalle, costo }` (salvo las que
-devuelven `Economia` o `Mundo`), así la UI puede mostrar por qué falló una operación.
+devuelven `Economia`, `Mundo` o `EstadoSimulacion`), así la UI puede mostrar por qué falló
+una operación.
 
 ```graphql
 # ejemplo
@@ -86,13 +101,62 @@ query {
 }
 ```
 
+## Simulación en vivo
+
+El reloj corre **en el servidor** (`src/server/reloj.ts`): una sola fuente de verdad para
+todos los clientes. **Arranca solo** al levantar el proceso (`autostart` en
+`src/server/index.ts`), así que la economía avanza aunque no haya nadie conectado. La
+cadencia sale de `POLIMORFISMO_TICK_MS` (default `30000`, o sea un período cada 30 s) y se
+puede desactivar con `POLIMORFISMO_SIM_AUTOSTART=0`. La UI manda la intención
+(`iniciarSimulacion` / `pausarSimulacion` / `ajustarSimulacion`) y recibe el estado por dos
+caminos:
+
+1. **SSE** en `GET /api/stream`: un snapshot del `Mundo` al conectar y otro en cada tick o
+   mutación. La UI lo consume con `EventSource` (`web/src/api.ts` → `suscribirMundo`).
+2. **Query `estadoSimulacion`**: play/pausa, velocidad, períodos/tick y cantidad de ticks.
+
+El bus de eventos (`src/server/eventos.ts`) desacopla "el mundo cambió" de "avisar a los
+clientes": `publicar()` se llama en cada mutación persistida y en cada tick.
+
+### Predicción aislada
+
+`predecir(periodos)` corre la simulación **N períodos hacia adelante sobre una copia** del
+mundo (`src/services/prediccion.ts` clona recursos, ambiente, empresas y mercado). Devuelve
+una serie `PuntoEconomico[]` sin tocar el estado real: el `periodo`, el histórico, las
+productividades y las cotizaciones reales quedan intactos.
+
+```graphql
+query {
+  predecir(periodos: 12) {
+    periodos
+    periodoInicial
+    pibFinal
+    productividadFinal
+    puntos { periodo pib productividadGlobal indiceMercado }
+  }
+}
+```
+
+### Usuarios y empresas propias
+
+- `registrar(handle, pin, nombre)` crea la cuenta y devuelve `{ token, usuario }`; `login`
+  hace lo mismo con una cuenta existente. El token viaja en `Authorization: Bearer <token>`
+  y el PIN se guarda hasheado con `Bun.password` (nunca en claro).
+- `fundarEmpresa(nombre, capitalInicial)` crea una empresa con `duenio = handle` y la lista
+  en el mercado; `adquirirComoUsuario(objetivo, comprador)` hace que una empresa del usuario
+  compre otra del sistema.
+- `resumen` devuelve lo que pasó desde `ultimoVisto` del usuario (variación de métricas +
+  eventos) y actualiza ese marcador. `eventos(desde)` expone la bitácora cruda.
+
 ## UI
 
-`web/` es un panel de lectura con acciones puntuales. Pestañas:
+`web/` es un panel de lectura con acciones puntuales. Arriba de todo hay una **barra de
+simulación** (iniciar/pausar, velocidad y períodos por tick) que gobierna el reloj del
+servidor; el resto de las vistas se actualizan solas por SSE. Pestañas:
 
 | Pestaña      | Muestra                                                                                                                                          |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Economía     | PIB, productividad global, disponibilidad, histórico (sparklines) y botones para avanzar 1/10 períodos y fijar la productividad de cada empresa. |
+| Economía     | Predicción aislada, PIB, productividad global, disponibilidad, histórico (sparklines) y botones para avanzar 1/10 períodos y fijar la productividad de cada empresa. |
 | Mercado      | Cotizaciones, variación, capitalización y adquisición por parte de la Empresa Demo o de la IA.                                                   |
 | Recursos     | Disponibilidad y precio de cada recurso, contaminación, temperatura e impacto ambiental.                                                         |
 | Nómina       | Sueldo base, factor de leyes, factor de productividad y sueldo final + totales.                                                                  |
@@ -101,6 +165,7 @@ query {
 | Propiedades  | Precio con leyes, ubicación, dueño y botón de compra.                                                                                            |
 | Empresas     | Capital, productividad, ubicación, jefe, plantilla, propiedades, cotización, capitalización, valor contable, IA y subsidiarias.                  |
 | IA y agentes | Sueldo de la IA, empresas adquiridas, agentes por sector, costo de uso y alta de agente.                                                         |
+| Cuenta       | Login/registro (handle + PIN), resumen de ausencia (métricas + eventos), empresas propias (fundar/adquirir) y bitácora reciente.                  |
 
 Stack: React 19 + Vite + TailwindCSS v4 + `lucide-react`. Gráficos: un `Sparkline` en SVG
 propio (sin librería de charts). Estilo: paleta neutra con un solo acento
@@ -130,7 +195,10 @@ También queda un `tailscale serve` en `https://vps-660e4a8c.tail7f613b.ts.net:8
 
 ## Ideas para seguir
 
-- Suscripciones GraphQL para ver la simulación en vivo sin refrescar.
+- ~~Suscripciones GraphQL para ver la simulación en vivo sin refrescar~~ → resuelto por SSE
+  (`/api/stream`).
 - Edición en la UI (capital, acciones, leyes) además de las acciones actuales.
 - Tests del esquema GraphQL (introspection + queries de humo).
 - Libro de órdenes real en el mercado (hoy el precio lo fija una fórmula).
+- Épicas B–F del modelo realista (sector, objetivo, IA, estatales, clientes): ver
+  [issues.md](./issues.md).

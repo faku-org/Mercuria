@@ -7,13 +7,14 @@ import Agente from "../domain/Agente";
 import type Empleado from "../domain/Empleado";
 import EmpleadoFijo from "../domain/EmpleadoFijo";
 import EmpleadoPorHora from "../domain/EmpleadoPorHora";
-import type Empresa from "../domain/Empresa";
+import Empresa from "../domain/Empresa";
 import type Estado from "../domain/Estado";
 import Jefe from "../domain/Jefe";
 import type Ley from "../domain/Ley";
 import type Nacion from "../domain/Nacion";
 import type Propiedad from "../domain/Propiedad";
 import type Recurso from "../domain/Recurso";
+import Usuario, { handleValido, normalizarHandle } from "../domain/Usuario";
 import Vendedor from "../domain/Vendedor";
 import agentesDemo, { aiCentral } from "../fixtures/aiBase";
 import { economiaDemo } from "../fixtures/economiaBase";
@@ -26,15 +27,23 @@ import nacionesBase from "../fixtures/nacionesBase";
 import propiedadesBase, { anaDuenia } from "../fixtures/propiedadesBase";
 import { resumenLeyes } from "../services/leyes";
 import { calcularNomina, totalNomina, totalNominaFinal } from "../services/nomina";
+import { predecir } from "../services/prediccion";
 import { avanzarPeriodos as correrPeriodos } from "../services/simulacion";
+import { publicar } from "./eventos";
 import {
+  actualizarUltimoVisto,
   cargarEstado,
+  cargarEventos,
   cargarSemilla,
+  cargarUsuarios,
   guardarEstado,
   guardarSemilla,
+  guardarUsuario,
   hayEstado,
+  registrarEvento,
   type EstadoPersistible,
   type FilaEmpleado,
+  type FilaEvento,
 } from "./db";
 
 /** Nómina viva (mutable): los empleados que existen hoy en el mundo. */
@@ -47,6 +56,10 @@ let proximoIdEmpleado = mundoEmpleados.reduce((maximo, e) => Math.max(maximo, e.
 
 /** Períodos simulados al sembrar, para que haya histórico que graficar. */
 const PERIODOS_INICIALES = 12;
+
+/** Usuarios registrados (por handle) y sesiones activas (token → handle). */
+const usuarios = new Map<string, Usuario>();
+const sesiones = new Map<string, string>();
 
 // --- DTOs -------------------------------------------------------------------
 
@@ -154,6 +167,8 @@ function empresaDto(empresa: Empresa) {
     aportePib: empresa.produccion(economia.factorRecursos(), economia.ambiente.impacto()),
     esControlada: empresa.esControlada,
     controladaPor: empresa.controladaPor?.nombre ?? null,
+    duenio: empresa.duenio?.handle ?? null,
+    esDeUsuario: empresa.esDeUsuario,
     subsidiarias: empresa.subsidiarias.map((subsidiaria) => subsidiaria.nombre),
     empleados: empresa.empleados.map(empleadoDto),
     propiedades: empresa.propiedades.map(propiedadDto),
@@ -363,6 +378,10 @@ function capturarEstado(): EstadoPersistible {
       capital: empresa.capital,
       productividad: empresa.productividad,
       controladaPor: empresa.controladaPor?.nombre ?? null,
+      duenio: empresa.duenio?.handle ?? null,
+      capacidad: empresa.capacidad,
+      acciones: empresa.acciones,
+      intensidadEmision: empresa.intensidadEmision,
     })),
     cotizaciones: mercado.cotizaciones.map((cotizacion) => ({
       empresa: cotizacion.empresa.nombre,
@@ -402,11 +421,28 @@ function aplicarEstado(estado: EstadoPersistible): void {
     if (ley) ley.activa = fila.activa;
   }
 
+  // Las empresas pueden venir de los fixtures o haber sido fundadas por un
+  // usuario en runtime: si no existe, se crea desde el estado guardado.
+  for (const usuario of usuarios.values()) usuario.empresas = [];
   for (const fila of estado.empresas) {
-    const empresa = mundoEmpresas.find((candidata) => candidata.nombre === fila.nombre);
-    if (!empresa) continue;
+    let empresa = mundoEmpresas.find((candidata) => candidata.nombre === fila.nombre);
+    if (!empresa) {
+      const id = mundoEmpresas.reduce((maximo, candidata) => Math.max(maximo, candidata.id), 0) + 1;
+      empresa = new Empresa(fila.nombre, id, [], fila.capital, [], {
+        productividad: fila.productividad,
+        capacidad: fila.capacidad,
+        acciones: fila.acciones,
+        intensidadEmision: fila.intensidadEmision,
+      });
+      mundoEmpresas.push(empresa);
+    }
     empresa.capital = fila.capital;
     empresa.productividad = fila.productividad;
+    if (fila.capacidad !== undefined && fila.capacidad !== null) empresa.capacidad = fila.capacidad;
+    if (fila.acciones !== undefined && fila.acciones !== null) empresa.acciones = fila.acciones;
+    if (fila.intensidadEmision !== undefined && fila.intensidadEmision !== null) {
+      empresa.intensidadEmision = fila.intensidadEmision;
+    }
     if (fila.controladaPor === null) {
       empresa.controladaPor = null;
     } else if (fila.controladaPor === aiCentral.nombre) {
@@ -414,6 +450,9 @@ function aplicarEstado(estado: EstadoPersistible): void {
     } else {
       empresa.controladaPor = mundoEmpresas.find((c) => c.nombre === fila.controladaPor) ?? null;
     }
+    const duenio = fila.duenio ? usuarios.get(fila.duenio) : undefined;
+    empresa.duenio = duenio ?? null;
+    if (duenio) duenio.agregarEmpresa(empresa);
   }
 
   // Subsidiarias y cartera de la IA se derivan del control.
@@ -431,6 +470,14 @@ function aplicarEstado(estado: EstadoPersistible): void {
     recurso.precio = fila.precio;
   }
 
+  // Asegura que cada empresa guardada tenga su cotización (las fundadas por
+  // usuarios no están en `mercadoBase`).
+  for (const fila of estado.cotizaciones) {
+    const empresa = mundoEmpresas.find((candidata) => candidata.nombre === fila.empresa);
+    if (empresa && !mercado.cotizacionDe(empresa)) {
+      mercado.listarEmpresa(empresa, fila.precio, fila.cantidad);
+    }
+  }
   for (const cotizacion of mercado.cotizaciones) {
     const fila = estado.cotizaciones.find((c) => c.empresa === cotizacion.empresa.nombre);
     if (!fila) continue;
@@ -481,13 +528,22 @@ function aplicarEstado(estado: EstadoPersistible): void {
   economia.historico = estado.puntos.map((punto) => ({ ...punto }));
 }
 
-/** Guarda el estado variable en SQLite. */
+/** Guarda el estado variable en SQLite y avisa a los clientes en vivo. */
 function persistir(): void {
   guardarEstado(capturarEstado());
+  publicar();
 }
 
 // Arranque: si hay estado guardado se carga; si no, se siembra la simulación y
 // se guarda tanto el estado como la semilla (a la que vuelve `reiniciar`).
+// Los usuarios se cargan antes de aplicar el estado, para vincular sus empresas.
+for (const fila of cargarUsuarios()) {
+  usuarios.set(
+    fila.handle,
+    new Usuario(fila.handle, fila.nombre, fila.hashPin, fila.creadoEn, fila.ultimoVisto),
+  );
+}
+
 if (hayEstado()) {
   const guardado = cargarEstado();
   if (guardado) aplicarEstado(guardado);
@@ -581,11 +637,41 @@ function crearAgente(datos: NuevoAgente): Agente {
   return agente;
 }
 
-/** Corre N períodos de simulación. */
-function avanzar(periodos: number = 1): ReturnType<typeof economiaDto> {
+/**
+ * Corre N períodos de simulación. Con `guardar = false` (usado por el reloj en
+ * vivo) no escribe en SQLite, pero sí publica el cambio para los clientes.
+ */
+function avanzar(periodos: number = 1, guardar: boolean = true): ReturnType<typeof economiaDto> {
   correrPeriodos({ economia, empresas: mundoEmpresas, mercado }, periodos);
-  persistir();
+  if (guardar) {
+    persistir();
+  } else {
+    publicar();
+  }
   return economiaDto();
+}
+
+/** Fuerza el guardado del estado (lo usa el reloj para no escribir cada tick). */
+function persistirMundo(): void {
+  persistir();
+}
+
+/**
+ * Proyecta la economía `periodos` hacia adelante sobre una copia aislada del
+ * mundo (ver `services/prediccion.ts`). No altera el estado real.
+ */
+function prediccionDto(periodos: number) {
+  const cantidad = Math.max(0, Math.min(240, Math.floor(periodos)));
+  const puntos = predecir({ economia, empresas: mundoEmpresas, mercado }, cantidad);
+  const ultimo = puntos[puntos.length - 1];
+  return {
+    periodos: cantidad,
+    periodoInicial: economia.periodo,
+    puntos,
+    pibFinal: ultimo?.pib ?? economia.pibGlobal,
+    productividadFinal: ultimo?.productividadGlobal ?? economia.productividadGlobal,
+    indiceFinal: ultimo?.indiceMercado ?? mercado.indice(),
+  };
 }
 
 /** Fija la productividad de una empresa por nombre. */
@@ -610,7 +696,15 @@ function adquirirEmpresa(
     ? aiCentral.adquirir(mercado, objetivo)
     : mercado.adquirir(empresaDemo, objetivo);
 
-  if (resultado.ok) persistir();
+  if (resultado.ok) {
+    anotarEvento(
+      "adquisicion",
+      `${porIA ? aiCentral.nombre : empresaDemo.nombre} adquirió ${objetivo.nombre} por ${resultado.costo}`,
+      null,
+      objetivo.nombre,
+    );
+    persistir();
+  }
 
   return {
     ...resultado,
@@ -623,25 +717,247 @@ function adquirirEmpresa(
 function reiniciar(): void {
   const semilla = cargarSemilla();
   if (!semilla) return;
+
+  // Las empresas fundadas por usuarios no están en la semilla: se eliminan.
+  for (const empresa of mundoEmpresas.filter((empresa) => empresa.duenio)) {
+    empresa.duenio?.quitarEmpresa(empresa);
+    mundoEmpresas.splice(mundoEmpresas.indexOf(empresa), 1);
+  }
+  mercado.cotizaciones = mercado.cotizaciones.filter((cotizacion) =>
+    mundoEmpresas.includes(cotizacion.empresa),
+  );
+
   aplicarEstado(semilla);
   guardarEstado(semilla);
+  publicar();
+}
+
+// --- Usuarios y sesiones ------------------------------------------------------
+
+/** Anota un evento en la bitácora del mundo. */
+function anotarEvento(
+  tipo: string,
+  descripcion: string,
+  handle: string | null = null,
+  empresa: string | null = null,
+): void {
+  registrarEvento({ periodo: economia.periodo, tipo, descripcion, handle, empresa });
+}
+
+function crearSesion(handle: string): string {
+  const token = `ses_${crypto.randomUUID()}`;
+  sesiones.set(token, handle);
+  return token;
+}
+
+/** Usuario dueño de una sesión, o `null`. */
+function sesionDeToken(token?: string | null): Usuario | null {
+  if (!token) return null;
+  const handle = sesiones.get(token);
+  if (!handle) return null;
+  return usuarios.get(handle) ?? null;
+}
+
+/** Perfil del usuario de la sesión, listo para GraphQL. */
+function usuarioActual(token?: string | null) {
+  return sesionDeToken(token)?.perfil ?? null;
+}
+
+function cerrarSesion(token?: string | null): void {
+  if (token) sesiones.delete(token);
+}
+
+/** Registra un usuario nuevo (handle único + PIN hasheado). */
+async function registrarUsuario(handleEntrada: string, pin: string, nombre?: string) {
+  const handle = normalizarHandle(handleEntrada);
+  if (!handleValido(handle)) {
+    throw new Error("Handle inválido: 3 a 20 caracteres (minúsculas, números o guion bajo).");
+  }
+  if (!/^\d{4,8}$/.test(pin)) {
+    throw new Error("El PIN debe tener entre 4 y 8 dígitos.");
+  }
+  if (usuarios.has(handle)) throw new Error("Ese handle ya está registrado.");
+
+  const hashPin = await Bun.password.hash(pin);
+  const usuario = new Usuario(
+    handle,
+    (nombre ?? "").trim() || handle,
+    hashPin,
+    new Date().toISOString(),
+    economia.periodo,
+  );
+  usuarios.set(handle, usuario);
+  guardarUsuario({
+    handle: usuario.handle,
+    nombre: usuario.nombre,
+    hashPin: usuario.hashPin,
+    creadoEn: usuario.creadoEn,
+    ultimoVisto: usuario.ultimoVisto,
+  });
+  anotarEvento("usuario", `Nuevo usuario ${handle}`);
+  return { token: crearSesion(handle), usuario: usuario.perfil };
+}
+
+/** Inicia sesión de un usuario existente. */
+async function loginUsuario(handleEntrada: string, pin: string) {
+  const handle = normalizarHandle(handleEntrada);
+  const usuario = usuarios.get(handle);
+  if (!usuario || !(await Bun.password.verify(pin, usuario.hashPin))) {
+    throw new Error("Usuario o PIN incorrecto.");
+  }
+  return { token: crearSesion(handle), usuario: usuario.perfil };
+}
+
+/** Marca hasta qué período vio el usuario (para el resumen de ausencia). */
+function marcarVisto(usuario: Usuario, periodo: number = economia.periodo): void {
+  usuario.ultimoVisto = periodo;
+  actualizarUltimoVisto(usuario.handle, periodo);
+}
+
+function eventoDto(fila: FilaEvento) {
+  return {
+    id: fila.id,
+    periodo: fila.periodo,
+    tipo: fila.tipo,
+    descripcion: fila.descripcion,
+    handle: fila.handle,
+    empresa: fila.empresa,
+  };
+}
+
+/** Eventos de la bitácora desde un período. */
+function eventosDesde(desde: number) {
+  return cargarEventos(Math.max(0, Math.floor(desde))).map(eventoDto);
+}
+
+// --- Empresas de usuarios -----------------------------------------------------
+
+/** Precio de salida de una empresa recién fundada. */
+const PRECIO_EMPRESA_NUEVA = 100;
+
+/** Funda una empresa propia del usuario. */
+function fundarEmpresa(usuario: Usuario, nombre: string, capitalInicial: number = 1_000_000) {
+  const nombreLimpio = nombre.trim();
+  if (nombreLimpio.length < 3) throw new Error("El nombre debe tener al menos 3 caracteres.");
+  if (mundoEmpresas.some((empresa) => empresa.nombre.toLowerCase() === nombreLimpio.toLowerCase())) {
+    throw new Error("Ya existe una empresa con ese nombre.");
+  }
+
+  const id = mundoEmpresas.reduce((maximo, empresa) => Math.max(maximo, empresa.id), 0) + 1;
+  const capital = Math.max(0, Number(capitalInicial) || 0);
+  const empresa = new Empresa(nombreLimpio, id, [], capital, [], {
+    nacion: nacionesBase[0],
+    acciones: 10_000,
+    duenio: usuario,
+  });
+  mundoEmpresas.push(empresa);
+  usuario.agregarEmpresa(empresa);
+  mercado.listarEmpresa(empresa, PRECIO_EMPRESA_NUEVA, empresa.acciones);
+  anotarEvento(
+    "fundacion",
+    `${usuario.handle} fundó ${empresa.nombre}`,
+    usuario.handle,
+    empresa.nombre,
+  );
+  persistir();
+  return empresaDto(empresa);
+}
+
+/** Una empresa del usuario adquiere otra empresa del sistema. */
+function adquirirEmpresaUsuario(
+  usuario: Usuario,
+  objetivoNombre: string,
+  compradorNombre?: string,
+): { ok: boolean; costo: number; motivo?: string; comprador?: string; objetivo?: string } {
+  const objetivo = mundoEmpresas.find((empresa) => empresa.nombre === objetivoNombre);
+  if (!objetivo) return { ok: false, costo: 0, motivo: "Empresa inexistente" };
+  if (objetivo.duenio === usuario) return { ok: false, costo: 0, motivo: "Ya es tuya" };
+
+  const comprador = compradorNombre
+    ? usuario.empresas.find((empresa) => empresa.nombre === compradorNombre)
+    : usuario.empresas[0];
+  if (!comprador) {
+    return { ok: false, costo: 0, motivo: "Necesitás al menos una empresa para adquirir" };
+  }
+
+  const resultado = mercado.adquirir(comprador, objetivo);
+  if (resultado.ok) {
+    objetivo.duenio = usuario;
+    usuario.agregarEmpresa(objetivo);
+    anotarEvento(
+      "adquisicion",
+      `${usuario.handle} adquirió ${objetivo.nombre} por ${resultado.costo}`,
+      usuario.handle,
+      objetivo.nombre,
+    );
+    persistir();
+  }
+  return { ...resultado, comprador: comprador.nombre, objetivo: objetivo.nombre };
+}
+
+/** Resumen de lo que pasó desde la última vez que el usuario miró. */
+function resumenDto(usuario: Usuario) {
+  const desde = usuario.ultimoVisto;
+  const hasta = economia.periodo;
+  const puntos = economia.historico.filter((punto) => punto.periodo >= desde);
+  const primero = puntos[0] ?? null;
+  const ultimo = puntos[puntos.length - 1] ?? null;
+  const eventos = cargarEventos(desde)
+    .filter((evento) => evento.handle === null || evento.handle === usuario.handle)
+    .map(eventoDto);
+
+  const resumen = {
+    desde,
+    hasta,
+    periodos: Math.max(0, hasta - desde),
+    pibInicio: primero?.pib ?? economia.pibGlobal,
+    pibFin: ultimo?.pib ?? economia.pibGlobal,
+    productividadInicio: primero?.productividadGlobal ?? economia.productividadGlobal,
+    productividadFin: ultimo?.productividadGlobal ?? economia.productividadGlobal,
+    contaminacionInicio: primero?.contaminacion ?? economia.ambiente.contaminacion,
+    contaminacionFin: ultimo?.contaminacion ?? economia.ambiente.contaminacion,
+    indiceInicio: primero?.indiceMercado ?? mercado.indice(),
+    indiceFin: ultimo?.indiceMercado ?? mercado.indice(),
+    empresas: usuario.empresas.map(empresaDto),
+    eventos,
+  };
+  marcarVisto(usuario, hasta);
+  return resumen;
+}
+
+/** Resumen de ausencia del usuario de la sesión, o `null`. */
+function resumenActual(token?: string | null) {
+  const usuario = sesionDeToken(token);
+  return usuario ? resumenDto(usuario) : null;
 }
 
 export {
   adquirirEmpresa,
+  adquirirEmpresaUsuario,
   ajustarProductividad,
   avanzar,
+  cerrarSesion,
   comprarPropiedad,
   crearAgente,
   crearEmpleado,
   economiaDto,
   empresaPorNombre,
+  eventosDesde,
+  fundarEmpresa,
   leyPorId,
   listaEmpresas,
+  loginUsuario,
   mercadoDto,
   mundoDto,
+  persistirMundo,
+  prediccionDto,
+  registrarUsuario,
   reiniciar,
+  resumenActual,
+  resumenDto,
+  sesionDeToken,
   toggleLey,
+  usuarioActual,
   type NuevoAgente,
   type NuevoEmpleado,
 };

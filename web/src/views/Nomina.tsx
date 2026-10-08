@@ -119,10 +119,10 @@ export function NominaView({ nomina, accion }: { nomina: Nomina; accion: Accion 
                   <td className="tabular px-5 py-3">{formatearMoneda(linea.sueldoBase)}</td>
                   <td className="tabular px-5 py-3">
                     {linea.factorLeyes === 0 ? (
-                      <span className="text-muted">—</span>
+                      <span className="text-muted">-</span>
                     ) : (
                       <span
-                        className={linea.factorLeyes > 0 ? "text-emerald-600" : "text-rose-600"}
+                        className={linea.factorLeyes > 0 ? "text-positive" : "text-negative"}
                       >
                         {formatearPorcentaje(linea.factorLeyes)}
                       </span>

@@ -67,7 +67,7 @@ export function RecursosView({ economia }: { economia: Economia }) {
                   disp. {formatearNivel(recurso.disponibilidad)}
                 </span>
                 <span
-                  className={`tabular text-xs ${recurso.escasez > 0.3 ? "text-rose-600" : "text-muted"}`}
+                  className={`tabular text-xs ${recurso.escasez > 0.3 ? "text-negative" : "text-muted"}`}
                 >
                   escasez {formatearNivel(recurso.escasez)}
                 </span>
@@ -112,7 +112,7 @@ export function RecursosView({ economia }: { economia: Economia }) {
                     </div>
                   </td>
                   <td className="tabular px-5 py-3 text-right">
-                    <span className={recurso.escasez > 0.3 ? "text-rose-600" : "text-muted"}>
+                    <span className={recurso.escasez > 0.3 ? "text-negative" : "text-muted"}>
                       {formatearNivel(recurso.escasez)}
                     </span>
                   </td>

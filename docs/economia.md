@@ -154,6 +154,38 @@ interface PuntoEconomico {
 }
 ```
 
+## Simulación en vivo
+
+`avanzarPeriodo` es el mismo ciclo de arriba, pero un **reloj en el servidor**
+(`src/server/reloj.ts`) lo corre solo: **arranca con el proceso** (no depende de que haya
+clientes), con play/pausa, velocidad (intervalo entre ticks) y períodos por tick. La
+cadencia sale de `POLIMORFISMO_TICK_MS` (default 30 s). Con cadencia lenta persiste en cada
+período; con cadencia rápida, cada 20 ticks. Cada cambio se publica en el bus de eventos
+(`src/server/eventos.ts`), que alimenta el stream **SSE** `GET /api/stream`. De ahí que
+todos los clientes vean el mismo mundo en vivo, sin refrescar.
+
+### Eventos y resumen de ausencia
+
+Los hechos notables (alta de usuario, fundación de empresa, adquisición) quedan en la
+bitácora `evento`. Un usuario tiene `ultimoVisto` (el período que vio por última vez); al
+volver, `resumen` compara el histórico entre `ultimoVisto` y el período actual y devuelve la
+variación de PIB, productividad, contaminación e índice, el estado de sus empresas y los
+eventos del rango, y actualiza `ultimoVisto`.
+
+### Usuarios
+
+Las cuentas se identifican por `handle` y se protegen con un PIN (hash `Bun.password`).
+Cada usuario puede **fundar** empresas (quedan con `duenio = handle`) y **adquirir** las del
+sistema; las empresas del sistema siguen con `duenio = null`.
+
+## Predicción (simulación aislada)
+
+`predecir(periodos)` (`src/services/prediccion.ts`) **clona** recursos, ambiente, empresas y
+mercado, y corre `avanzarPeriodos` sobre la copia. Devuelve las muestras `PuntoEconomico`
+proyectadas sin tocar el estado real (período, histórico, productividades y cotizaciones
+reales quedan intactos). Es una proyección determinista del modelo actual: sirve para ver a
+dónde lleva la configuración vigente, no para anticipar shocks exógenos.
+
 ## Superficie GraphQL
 
 La API es **GraphQL** (graphql-yoga sobre Elysia, endpoint `/graphql`, GraphiQL activo).
@@ -167,6 +199,8 @@ Queries principales:
 | `mercado`  | Cotizaciones y capitalizaciones.                                 |
 | `recursos` | Recursos con disponibilidad y precio.                            |
 | `empresas` | Empresas con productividad, aporte al PIB y subsidiarias.        |
+| `estadoSimulacion` | Reloj en vivo (play/pausa, velocidad, ticks).            |
+| `predecir(periodos)` | Proyección aislada del sistema.                        |
 
 Mutations principales:
 
@@ -178,6 +212,9 @@ Mutations principales:
 | `toggleLey(id: String!)`                                | Activa/desactiva una ley.             |
 | `crearEmpleado(input)` / `crearAgente(input)`           | Altas.                                |
 | `comprarPropiedad(id: String!)`                         | La empresa compra una propiedad.      |
+| `iniciarSimulacion(intervaloMs, periodosPorTick)`       | Arranca el reloj en vivo.             |
+| `pausarSimulacion`                                      | Pausa el reloj.                       |
+| `ajustarSimulacion(intervaloMs, periodosPorTick)`       | Cambia la velocidad.                  |
 | `reiniciar`                                             | Restaura el mundo inicial.            |
 
 ## Persistencia (SQLite)
