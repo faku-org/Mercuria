@@ -107,6 +107,10 @@ const PESTANAS = [
 type PestanaId = (typeof PESTANAS)[number]["id"];
 
 export default function App() {
+  useEffect(() => {
+    document.title = "Mercuria · Panel";
+  }, []);
+
   const [mundo, setMundo] = useState<Mundo | null>(null);
   const [pestana, setPestana] = useState<PestanaId>("economia");
   const [error, setError] = useState<string | null>(null);
@@ -265,6 +269,9 @@ export default function App() {
           </div>
         </div>
         {usuario ? <p className="mb-3 text-xs text-accent">@{usuario.handle}</p> : null}
+        <a href="/" className="mb-3 inline-block text-xs text-muted hover:text-ink">
+          ← Volver a la portada
+        </a>
         <nav className="space-y-1">
           {PESTANAS.map(({ id, label, Icono }) => (
             <button

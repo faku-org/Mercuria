@@ -53,7 +53,7 @@ bun test        # tests del dominio
 ## API + UI
 
 ```bash
-bun run serve     # UI + API en http://localhost:3011/ (GraphQL en /graphql)
+bun run serve     # portada en /, panel en /app y GraphQL en /graphql (http://localhost:3011)
 bun run web:dev   # UI en modo dev (:3010, proxy a :3011)
 ```
 
@@ -66,7 +66,7 @@ Detalle del modelo económico en [docs/economia.md](docs/economia.md).
 | ------------------- | ---------------------------------------------------- |
 | `bun run start`     | CLI interactiva (`src/index.ts`).                    |
 | `bun run demo`      | Nómina de ejemplo sin interacción.                   |
-| `bun run serve`     | UI + API GraphQL en `:3011` (`src/server/index.ts`). |
+| `bun run serve`     | Portada, panel y API GraphQL en `:3011` (`src/server/index.ts`). |
 | `bun run web:dev`   | UI en `:3010` con proxy a la API.                    |
 | `bun run web:build` | Genera `web/dist` (lo sirve `serve` en `/`).         |
 | `bun run check`     | Chequeo de tipos (`tsc --noEmit`).                   |

@@ -10,14 +10,15 @@ bun run web:dev   # UI en modo dev (:3010, proxy /graphql → :3011)
 bun run web:build # genera web/dist, que `serve` sirve en la raíz
 ```
 
-Con `web/dist` presente, **un solo puerto** sirve la UI en `/` y la API en `/graphql`
+Con `web/dist` presente, **un solo puerto** sirve la portada en `/`, el panel en `/app` y la API en `/graphql`
 (con GraphiQL). Sin build, `/graphql` sigue funcionando y `/` da 404.
 
 ## Endpoint
 
 | Ruta              | Qué es                                                  |
 | ----------------- | ------------------------------------------------------- |
-| `GET /`           | `web/dist/index.html` (la UI).                          |
+| `GET /`           | `web/dist/index.html`: la portada (showcase).           |
+| `GET /app`, `/app/*` | `web/dist/index.html`: el panel (misma SPA).         |
 | `GET /assets/*`   | Bundle de la UI (JS/CSS).                               |
 | `GET /api/salud`  | Health check (`{ ok, servicio, web }`).                 |
 | `GET /api/stream` | SSE: empuja el `Mundo` en cada tick o mutación.         |
@@ -148,9 +149,23 @@ query {
 - `resumen` devuelve lo que pasó desde `ultimoVisto` del usuario (variación de métricas +
   eventos) y actualiza ese marcador. `eventos(desde)` expone la bitácora cruda.
 
-## UI
+## Portada (showcase)
 
-`web/` es un panel de lectura con acciones puntuales. Arriba de todo hay una **barra de
+`/` es una página de presentación (`web/src/showcase/`): a qué apunta el proyecto, sus
+características, el ciclo de simulación con una **demo interactiva** y el estado real
+(implementado frente a planteado, más los límites declarados). No hay router: `web/src/main.tsx`
+elige entre portada y panel según el `pathname` (`/app` carga el panel) y cada uno se carga
+por separado (`lazy`), así la portada no descarga el código del panel.
+
+La demo corre en el navegador con `web/src/sim/motor.ts`, un **port del ciclo de
+`services/simulacion.ts`** (la UI no importa código del backend). Con las tres palancas en ×1
+produce la misma trayectoria que el servidor. `tests/showcase-paridad.test.ts` lo verifica
+contra el dominio real durante 80 períodos: si cambiás una fórmula del ciclo, ese test falla y
+hay que actualizar el motor.
+
+## UI (panel)
+
+`web/` en `/app` es un panel de lectura con acciones puntuales. Arriba de todo hay una **barra de
 simulación** (iniciar/pausar, velocidad y períodos por tick) que gobierna el reloj del
 servidor; el resto de las vistas se actualizan solas por SSE. Pestañas:
 
@@ -176,7 +191,7 @@ propio (sin librería de charts). Estilo: paleta neutra con un solo acento
 El servicio corre como `mercuria.service` (systemd, loopback `127.0.0.1:3011`) desde
 `/srv/mercuria/current` y se expone **público** por nginx + Cloudflare:
 
-- `https://mercuria.facupresa.com/` (UI) y `/graphql` (API).
+- `https://mercuria.facupresa.com/` (portada), `/app` (panel) y `/graphql` (API).
 - Registro CF: `CNAME mercuria.facupresa.com → facupresa.com`, proxied.
 - Vhost: `~/deploy/nginx/mercuria.facupresa.com.conf` → `127.0.0.1:3011`, cert por
   DNS-01 (`/etc/letsencrypt/live/mercuria.facupresa.com/`).

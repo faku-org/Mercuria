@@ -110,7 +110,10 @@ export function crearApp() {
 
   if (hayBuild) {
     app
+      // Portada (showcase) en `/` y panel en `/app`: es la misma SPA, decide el pathname.
       .get("/", () => archivo("index.html"))
+      .get("/app", () => archivo("index.html"))
+      .get("/app/*", () => archivo("index.html"))
       .get("/assets/*", ({ request }) => archivo(new URL(request.url).pathname))
       .get("/favicon.ico", () => archivo("favicon.ico"));
   }
