@@ -44,6 +44,8 @@ function clonarMundo(mundo: MundoPredecible): MundoPredecible {
     economia.ambiente.contaminacion,
     economia.ambiente.temperatura,
     economia.ambiente.biodiversidad,
+    // La calidad del aire es estado propio (reacciona al flujo), no derivable del stock.
+    economia.ambiente.calidadAire,
   );
 
   const economiaCopia = new Economia(recursos, ambiente);

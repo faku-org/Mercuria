@@ -118,7 +118,11 @@ const CARACTERISTICAS = [
 const PASOS = [
   { n: 1, titulo: "Produce", formula: "capital × productividad × √recursos × (1 − impacto)" },
   { n: 2, titulo: "Consume y emite", formula: "consumo = consumoBase × producción × 1e-9" },
-  { n: 3, titulo: "Regenera", formula: "disponibilidad += regeneración (tope 2)" },
+  {
+    n: 3,
+    titulo: "Regenera y absorbe",
+    formula: "disponibilidad += regeneración · contaminación *= 0,995",
+  },
   {
     n: 4,
     titulo: "Converge",
@@ -177,7 +181,7 @@ const LIMITES = [
   "Los recursos son independientes: no hay sustitución.",
   "Las leyes afectan sueldos, propiedades y IA, pero todavía no el PIB.",
   "No hay quiebras ni desempleo automáticos.",
-  "El ambiente no se regenera dentro del ciclo: la contaminación solo acumula.",
+  "La absorción del ambiente es una tasa fija: todavía no depende de la biodiversidad ni de la tecnología.",
 ] as const;
 
 // --- Página ------------------------------------------------------------------

@@ -17,6 +17,15 @@ const PRODUCTIVIDAD_OBJETIVO = 1.2;
 const PESO_CRECIMIENTO = 0.5;
 const PESO_PRODUCTIVIDAD = 0.5;
 const PRODUCTIVIDAD_MAXIMA = 2;
+/**
+ * Ambiente (idénticas a `domain/Ambiente.ts`; el test de paridad las compara):
+ * stock lento que se absorbe de a poco y aire rápido que reacciona al flujo de emisiones.
+ */
+const ABSORCION_STOCK = 0.005;
+const PERSISTENCIA_AIRE = 0.6;
+const EMISION_DE_REFERENCIA = 7.5e-4;
+const AIRE_DE_REFERENCIA = 0.12;
+const SENSIBILIDAD_AIRE = (AIRE_DE_REFERENCIA * (1 - PERSISTENCIA_AIRE)) / EMISION_DE_REFERENCIA;
 
 export interface RecursoSim {
   id: string;
@@ -57,6 +66,9 @@ export interface PuntoSim {
   productividadGlobal: number;
   contaminacion: number;
   indiceMercado: number;
+  /** Extras de la demo (el histórico del backend no los guarda). */
+  calidadAire: number;
+  temperatura: number;
 }
 
 export interface MundoSim {
@@ -80,6 +92,14 @@ export interface Palancas {
   /** Multiplica la regeneración natural de los recursos. */
   regeneracion: number;
 }
+
+export const CONSTANTES_AMBIENTE = {
+  ABSORCION_STOCK,
+  PERSISTENCIA_AIRE,
+  EMISION_DE_REFERENCIA,
+  AIRE_DE_REFERENCIA,
+  SENSIBILIDAD_AIRE,
+} as const;
 
 export const PALANCAS_BASE: Palancas = { consumo: 1, emision: 1, regeneracion: 1 };
 
@@ -213,10 +233,27 @@ function disponibilidadMedia(recursos: RecursoSim[]): number {
   return redondear(suma / recursos.length, 6);
 }
 
-function actualizarTemperaturaYBiodiversidad(ambiente: AmbienteSim): void {
-  ambiente.calidadAire = redondear(Math.max(0, 1 - ambiente.contaminacion), 4);
+/** Temperatura y biodiversidad siguen al stock lento de contaminación. */
+function sincronizarDerivados(ambiente: AmbienteSim): void {
   ambiente.temperatura = redondear(ambiente.contaminacion * 2, 4);
-  ambiente.biodiversidad = redondear(Math.max(0, ambiente.calidadAire * 0.9), 4);
+  ambiente.biodiversidad = redondear(Math.max(0, (1 - ambiente.contaminacion) * 0.9), 4);
+}
+
+/** Emisiones del período: suben el stock y la contaminación del aire (que conserva parte). */
+function registrarEmision(ambiente: AmbienteSim, intensidad: number): void {
+  ambiente.contaminacion = redondear(Math.min(1, ambiente.contaminacion + intensidad), 6);
+  const aire = Math.min(
+    1,
+    (1 - ambiente.calidadAire) * PERSISTENCIA_AIRE + SENSIBILIDAD_AIRE * intensidad,
+  );
+  ambiente.calidadAire = redondear(Math.max(0, 1 - aire), 4);
+  sincronizarDerivados(ambiente);
+}
+
+/** Absorción natural del stock por período. */
+function absorberStock(ambiente: AmbienteSim): void {
+  ambiente.contaminacion = redondear(ambiente.contaminacion * (1 - ABSORCION_STOCK), 6);
+  sincronizarDerivados(ambiente);
 }
 
 /** Capitalización bursátil de una empresa (`precio × acciones`). */
@@ -236,7 +273,7 @@ function indiceMercado(empresas: EmpresaSim[]): number {
 
 /**
  * Avanza un período, en el mismo orden que el backend:
- * producción → consumo y emisiones → regeneración → productividad → PIB → mercado → histórico.
+ * producción → consumo y emisiones → absorción y regeneración → productividad → PIB → mercado.
  * Muta `mundo`.
  */
 export function avanzarPeriodo(mundo: MundoSim, palancas: Palancas = PALANCAS_BASE): void {
@@ -264,11 +301,8 @@ export function avanzarPeriodo(mundo: MundoSim, palancas: Palancas = PALANCAS_BA
     (total, empresa) => total + empresa.intensidadEmision * empresa.produccion,
     0,
   );
-  ambiente.contaminacion = redondear(
-    Math.min(1, ambiente.contaminacion + emisiones * EMISION_POR_PRODUCCION * palancas.emision),
-    6,
-  );
-  actualizarTemperaturaYBiodiversidad(ambiente);
+  registrarEmision(ambiente, emisiones * EMISION_POR_PRODUCCION * palancas.emision);
+  absorberStock(ambiente);
 
   // 3. Regeneración natural de los recursos.
   for (const recurso of recursos) {
@@ -325,6 +359,8 @@ export function avanzarPeriodo(mundo: MundoSim, palancas: Palancas = PALANCAS_BA
     productividadGlobal: mundo.productividadGlobal,
     contaminacion: redondear(ambiente.contaminacion, 4),
     indiceMercado: redondear(indiceMercado(empresas), 2),
+    calidadAire: ambiente.calidadAire,
+    temperatura: ambiente.temperatura,
   });
   mundo.periodo += 1;
 }
