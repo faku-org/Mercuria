@@ -1,12 +1,18 @@
 import { describe, expect, test } from "bun:test";
 
-import Ambiente from "../src/domain/Ambiente";
+import Ambiente, {
+  ABSORCION_STOCK,
+  AIRE_DE_REFERENCIA,
+  EMISION_DE_REFERENCIA,
+  PERSISTENCIA_AIRE,
+  SENSIBILIDAD_AIRE,
+} from "../src/domain/Ambiente";
 import Economia from "../src/domain/Economia";
 import Empresa from "../src/domain/Empresa";
 import Mercado from "../src/domain/Mercado";
 import Recurso, { type TipoRecurso } from "../src/domain/Recurso";
 import { avanzarPeriodos } from "../src/services/simulacion";
-import { SEMILLA, avanzarPeriodo, crearMundo } from "../web/src/sim/motor";
+import { CONSTANTES_AMBIENTE, SEMILLA, avanzarPeriodo, crearMundo } from "../web/src/sim/motor";
 
 /** Arma el mundo del dominio con la misma semilla que usa la demo del showcase. */
 function mundoDeDominio() {
@@ -46,6 +52,12 @@ describe("paridad del motor del showcase con el dominio", () => {
     for (let i = 0; i < 80; i += 1) {
       avanzarPeriodos(dominio, 1);
       avanzarPeriodo(demo);
+      // El ambiente (stock lento y aire rápido) tiene que coincidir en cada período.
+      const real = dominio.economia.ambiente;
+      expect(demo.ambiente.calidadAire).toBeCloseTo(real.calidadAire, 4);
+      expect(demo.ambiente.contaminacion).toBeCloseTo(real.contaminacion, 6);
+      expect(demo.ambiente.temperatura).toBeCloseTo(real.temperatura, 4);
+      expect(demo.ambiente.biodiversidad).toBeCloseTo(real.biodiversidad, 4);
     }
 
     expect(demo.historico).toHaveLength(dominio.economia.historico.length);
@@ -61,6 +73,16 @@ describe("paridad del motor del showcase con el dominio", () => {
     dominio.economia.recursos.forEach((recurso, indice) => {
       expect(demo.recursos[indice]!.disponibilidad).toBeCloseTo(recurso.disponibilidad, 6);
       expect(demo.recursos[indice]!.precio).toBeCloseTo(recurso.precio, 4);
+    });
+  });
+
+  test("las constantes del ambiente son las mismas que las del dominio", () => {
+    expect(CONSTANTES_AMBIENTE).toEqual({
+      ABSORCION_STOCK,
+      PERSISTENCIA_AIRE,
+      EMISION_DE_REFERENCIA,
+      AIRE_DE_REFERENCIA,
+      SENSIBILIDAD_AIRE,
     });
   });
 });

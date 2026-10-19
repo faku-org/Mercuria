@@ -150,16 +150,21 @@ export function Simulador() {
     pib: h.map((p) => p.pib),
     productividad: h.map((p) => p.productividadGlobal),
     contaminacion: h.map((p) => p.contaminacion),
+    calidadAire: h.map((p) => p.calidadAire),
+    temperatura: h.map((p) => p.temperatura),
     indice: h.map((p) => p.indiceMercado),
   };
-  // Más contaminación es peor: se invierte el tono de la variación.
-  const variacionContaminacion = variacionDe(series.contaminacion, false);
-  const tonoContaminacion =
-    variacionContaminacion.tono === "positivo"
-      ? "negativo"
-      : variacionContaminacion.tono === "negativo"
-        ? "positivo"
-        : "neutro";
+  // Más contaminación y más temperatura son peores: se invierte el tono de la variación.
+  const empeora = (serie: number[]) => {
+    const variacion = variacionDe(serie, false);
+    const tono =
+      variacion.tono === "positivo"
+        ? "negativo"
+        : variacion.tono === "negativo"
+          ? "positivo"
+          : "neutro";
+    return { ...variacion, tono } as const;
+  };
 
   const cuelloDeBotella = [...mundo.recursos].sort(
     (a, b) => a.disponibilidad - b.disponibilidad,
@@ -259,7 +264,7 @@ export function Simulador() {
       </Card>
 
       {/* Series */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <GraficoSerie
           titulo="PIB global"
           valores={series.pib}
@@ -277,20 +282,36 @@ export function Simulador() {
           variacion={variacionDe(series.productividad, false)}
         />
         <GraficoSerie
-          titulo="Contaminación"
-          valores={series.contaminacion}
-          periodoInicial={0}
-          formato={(v) => formatearNivel(v, 2)}
-          actual={formatearNivel(mundo.ambiente.contaminacion, 2)}
-          variacion={{ ...variacionContaminacion, tono: tonoContaminacion }}
-        />
-        <GraficoSerie
           titulo="Índice de mercado"
           valores={series.indice}
           periodoInicial={0}
           formato={(v) => formatearNumero(v, 1)}
           actual={formatearNumero(series.indice[series.indice.length - 1] ?? 100, 1)}
           variacion={variacionDe(series.indice, true)}
+        />
+        <GraficoSerie
+          titulo="Calidad del aire · rápida"
+          valores={series.calidadAire}
+          periodoInicial={0}
+          formato={(v) => formatearNivel(v, 1)}
+          actual={formatearNivel(mundo.ambiente.calidadAire, 1)}
+          variacion={variacionDe(series.calidadAire, false)}
+        />
+        <GraficoSerie
+          titulo="Contaminación acumulada · lenta"
+          valores={series.contaminacion}
+          periodoInicial={0}
+          formato={(v) => formatearNivel(v, 2)}
+          actual={formatearNivel(mundo.ambiente.contaminacion, 2)}
+          variacion={empeora(series.contaminacion)}
+        />
+        <GraficoSerie
+          titulo="Temperatura · lenta"
+          valores={series.temperatura}
+          periodoInicial={0}
+          formato={(v) => `+${formatearNumero(v, 2)} °C`}
+          actual={`+${formatearNumero(mundo.ambiente.temperatura, 2)} °C`}
+          variacion={empeora(series.temperatura)}
         />
       </div>
 
@@ -427,7 +448,7 @@ function TablaHistorico({ mundo }: { mundo: MundoSim }) {
   const filas = mundo.historico.slice(-15).reverse();
   return (
     <div className="mt-3 overflow-x-auto rounded-2xl border border-line bg-surface">
-      <table className="w-full min-w-[32rem] text-left text-sm">
+      <table className="w-full min-w-[36rem] text-left text-sm">
         <caption className="sr-only">Últimos 15 períodos de la simulación</caption>
         <thead>
           <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
@@ -439,6 +460,9 @@ function TablaHistorico({ mundo }: { mundo: MundoSim }) {
             </th>
             <th scope="col" className="px-4 py-2 font-medium">
               Productividad
+            </th>
+            <th scope="col" className="px-4 py-2 font-medium">
+              Aire
             </th>
             <th scope="col" className="px-4 py-2 font-medium">
               Contaminación
@@ -454,6 +478,7 @@ function TablaHistorico({ mundo }: { mundo: MundoSim }) {
               <td className="px-4 py-1.5">{p.periodo}</td>
               <td className="px-4 py-1.5">{millones(p.pib)}</td>
               <td className="px-4 py-1.5">{formatearNumero(p.productividadGlobal, 3)}</td>
+              <td className="px-4 py-1.5">{formatearNivel(p.calidadAire, 1)}</td>
               <td className="px-4 py-1.5">{formatearNivel(p.contaminacion, 2)}</td>
               <td className="px-4 py-1.5">{formatearNumero(p.indiceMercado, 1)}</td>
             </tr>

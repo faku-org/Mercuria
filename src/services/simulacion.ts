@@ -25,7 +25,7 @@ const PESO_PRODUCTIVIDAD = 0.5;
 
 /**
  * Avanza un período del sistema económico:
- * producción → consumo de recursos → emisiones → evolución de productividad →
+ * producción → consumo de recursos → emisiones y absorción → evolución de productividad →
  * PIB y productividad global → reprecio del mercado → histórico.
  */
 function avanzarPeriodo(mundo: MundoSimulable): void {
@@ -54,6 +54,8 @@ function avanzarPeriodo(mundo: MundoSimulable): void {
     0,
   );
   economia.ambiente.registrarEmision(emisiones * EMISION_POR_PRODUCCION);
+  // El ambiente absorbe de a poco el stock acumulado (el aire se recupera solo, por persistencia).
+  economia.ambiente.regenerar();
 
   // 3. Regeneración natural de los recursos.
   for (const recurso of economia.recursos) {

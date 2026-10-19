@@ -94,13 +94,38 @@ El factor `1e-9` (y `1.2e-10` en las emisiones) está en `services/simulacion.ts
 calibrado para que la disponibilidad se mueva de a poco en vez de vaciarse de golpe —
 hay un test que corre 60 períodos y verifica que el sistema no colapsa.
 
-El ambiente se degrada con las emisiones de la producción y se recupera muy lento:
+El ambiente es un **balance entre un flujo de emisiones y una capacidad de absorción**, con
+dos escalas de tiempo (`domain/Ambiente.ts`):
+
+- **Stock lento** `contaminacion`: se acumula con las emisiones y el ambiente absorbe una
+  fracción por período. Gobierna `temperatura` y `biodiversidad`.
+- **Aire rápido** `calidadAire`: es estado propio (ya no es `1 − contaminacion`). Reacciona al
+  flujo de emisiones del período y conserva solo una parte del período anterior, así que se
+  recupera en pocos períodos si la producción cae (el efecto pandemia: el aire mejora en
+  semanas, el clima no).
 
 ```
-contaminacion += Σ (produccionᵢ × intensidadEmisionᵢ) × 1.2e-10  (acotado a 1)
-calidadAire    = clamp(1 − contaminacion, 0, 1)
-contaminacion *= 0.995          # regeneración lenta por período
+emisión        = Σ (produccionᵢ × intensidadEmisionᵢ) × 1.2e-10
+contaminacion  = min(1, contaminacion + emisión)
+contaminacion *= 1 − 0.005                              # absorción del stock
+aire           = aire × 0.6 + sensibilidad × emisión    # aire = 1 − calidadAire, acotado a 1
+temperatura    = contaminacion × 2
+biodiversidad  = 0.9 × (1 − contaminacion)
+sensibilidad   = aireReferencia × (1 − 0.6) / emisiónReferencia
 ```
+
+La "regeneración si baja la producción" no es una regla aparte: surge de que la emisión pase a
+ser menor que la absorción. Con la semilla, la emisión por período ronda `7,5e-4`
+(`EMISION_DE_REFERENCIA`) y el aire queda en `0,12` (`AIRE_DE_REFERENCIA`); `sensibilidad` se
+calibra para que ese par sea el equilibrio. La contaminación llega a un máximo y después baja
+cuando cae la producción.
+
+Las constantes (`ABSORCION_STOCK`, `PERSISTENCIA_AIRE`, `EMISION_DE_REFERENCIA`,
+`AIRE_DE_REFERENCIA`) están en `domain/Ambiente.ts`. La demo del showcase tiene una copia
+(`web/src/sim/motor.ts`) y `tests/showcase-paridad.test.ts` verifica que coincidan.
+
+> La absorción es una tasa fija. Que dependa de la biodiversidad (tipping point) o de la
+> tecnología queda para más adelante (ver [tecnologia.md](tecnologia.md)).
 
 ## Mercado
 
@@ -125,7 +150,7 @@ y el comprador la suma a `subsidiarias`. Las IAs usan esto para crecer sin contr
 `services/simulacion.ts` → `avanzarPeriodo(mundo)`, un período:
 
 1. Cada empresa produce (capital × productividad × recursos × ambiente).
-2. Se consumen recursos y se emiten contaminantes.
+2. Se consumen recursos, se emiten contaminantes y el ambiente absorbe parte del stock.
 3. Se actualizan recursos (consumo, regeneración, precio por escasez).
 4. La productividad de cada empresa **converge** al techo que el entorno permite:
 
