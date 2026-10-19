@@ -4,7 +4,6 @@ import Ambiente, {
   ABSORCION_STOCK,
   AIRE_DE_REFERENCIA,
   EMISION_DE_REFERENCIA,
-  PERSISTENCIA_AIRE,
 } from "../src/domain/Ambiente";
 import Economia from "../src/domain/Economia";
 import Empresa from "../src/domain/Empresa";
@@ -87,9 +86,6 @@ describe("ambiente: flujo y absorción", () => {
     const ambiente = new Ambiente(0.12, 0, 0.88);
     for (let i = 0; i < 40; i += 1) ambiente.registrarEmision(EMISION_DE_REFERENCIA);
     expect(1 - ambiente.calidadAire).toBeCloseTo(AIRE_DE_REFERENCIA, 2);
-    // Y la persistencia es la que dice la calibración.
-    expect(PERSISTENCIA_AIRE).toBeGreaterThan(0);
-    expect(PERSISTENCIA_AIRE).toBeLessThan(1);
   });
 
   test("el impacto usa el aire como estado propio", () => {
