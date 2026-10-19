@@ -118,7 +118,11 @@ const CARACTERISTICAS = [
 const PASOS = [
   { n: 1, titulo: "Produce", formula: "capital × productividad × √recursos × (1 − impacto)" },
   { n: 2, titulo: "Consume y emite", formula: "consumo = consumoBase × producción × 1e-9" },
-  { n: 3, titulo: "Regenera y absorbe", formula: "disponibilidad += regeneración · stock × 0,995" },
+  {
+    n: 3,
+    titulo: "Regenera y absorbe",
+    formula: "disponibilidad += regeneración · contaminación *= 0,995",
+  },
   {
     n: 4,
     titulo: "Converge",
