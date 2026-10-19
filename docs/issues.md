@@ -154,7 +154,7 @@ Diseño completo y reglas de trabajo en paralelo: [tecnologia.md](./tecnologia.m
 
 | Código | Épica | Estado |
 | ------ | ----- | ------ |
-| H | Ambiente: flujo y absorción | [ ] |
+| H | Ambiente: flujo y absorción ([#77](https://github.com/faku-org/Mercuria/pull/77)) | [x] |
 | I | Tecnología y patentes (dominio puro) | [ ] |
 | J | Valores y descripción de empresa | [ ] |
 | K | Investigadores y subasta | [ ] |

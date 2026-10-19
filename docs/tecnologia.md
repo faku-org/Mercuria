@@ -5,8 +5,9 @@ jurisdicción**, **cómputo alquilable** y un modelo ambiental con **flujo y abs
 especificación de referencia para varias sesiones de trabajo en paralelo: cada una construye
 un módulo aislado y la integración al ciclo de simulación va después.
 
-> Estado: **diseño**. Nada de esto está en el ciclo de `avanzarPeriodo` todavía. Las decisiones
-> de abajo las tomó Faku; las fórmulas son **propuestas de arranque** y se calibran con tests.
+> Estado: **diseño**, salvo la épica H (ambiente con flujo y absorción), que ya está en `main`
+> (#77). El resto no está en el ciclo de `avanzarPeriodo` todavía. Las decisiones de abajo las
+> tomó Faku; las fórmulas son **propuestas de arranque** y se calibran con tests.
 
 ## Decisiones tomadas
 
@@ -26,23 +27,25 @@ un módulo aislado y la integración al ciclo de simulación va después.
 
 ## 1. Modelo ambiental: flujo y absorción
 
-Hoy `contaminacion` es un único stock que solo acumula (`Ambiente.regenerar()` existe pero el
-ciclo no la llama). Pasa a ser un balance:
+> **Implementado** en la épica H (#77). El detalle y las constantes están en
+> [economia.md](economia.md#recursos-y-ambiente) y `src/domain/Ambiente.ts`.
+
+La contaminación es un balance, no un stock que solo acumula:
 
 ```
 Δcontaminación = emisión (flujo) − absorción (capacidad del ambiente)
 ```
 
-- **Stock lento** `contaminacion`: absorción de 0,5% por período (el 0,995 que ya documenta
-  `economia.md`). Gobierna `temperatura` y `biodiversidad`.
-- **Índice rápido de aire**: reacciona al flujo reciente de emisiones y se recupera en pocos
-  períodos si la producción cae. Gobierna `calidadAire`.
+- **Stock lento** `contaminacion`: absorción de 0,5% por período. Gobierna `temperatura` y
+  `biodiversidad`.
+- **Aire rápido** `calidadAire`: estado propio que reacciona al flujo reciente de emisiones y
+  se recupera en pocos períodos si la producción cae.
 - La "regeneración si baja la productividad" **no es una regla**: surge de que la emisión pase a
   ser menor que la absorción.
-- Más adelante la absorción podría depender de `biodiversidad` (tipping point). No está en el
-  alcance inicial.
+- Todavía **no** está (queda para las épicas siguientes): que la absorción dependa de
+  `biodiversidad` (tipping point) y que la tecnología y la IA modifiquen la emisión.
 
-La emisión total es:
+La emisión total, con tecnología e IA, será:
 
 ```
 emisión = Σ producciónᵢ × intensidadᵢ × (1 − reducciónEnergéticaᵢ)  +  cómputo × intensidadDelMixEnergético
@@ -181,7 +184,7 @@ avisarlo en el PR.
 
 | Código | Épica | Depende de | Tocan archivos del motor |
 | ------ | ----- | ---------- | ------------------------ |
-| H | Ambiente: flujo y absorción | nada | sí (la hace una sola sesión) |
+| H | Ambiente: flujo y absorción (**hecha**, #77) | nada | sí |
 | I | Tecnología y patentes (dominio puro) | contratos | no |
 | J | Valores y descripción de empresa | contratos | no |
 | K | Investigadores y subasta | contratos | no |

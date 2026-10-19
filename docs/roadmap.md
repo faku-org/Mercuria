@@ -146,7 +146,7 @@ Plan y issues: [issues.md](./issues.md) (#41–#50).
 ## Tecnología, investigación y jurisdicciones (diseño en docs/tecnologia.md)
 
 - [x] Contratos compartidos y PRNG con semilla (`domain/contratosTecnologia.ts`, `services/aleatorio.ts`)
-- [ ] H: ambiente con flujo y absorción (aire rápido, temperatura lenta)
+- [x] H: ambiente con flujo y absorción (aire rápido, temperatura lenta)
 - [ ] I: tecnología (energía, procesamiento, burocracia) y patentes
 - [ ] J: valores de la empresa desde una descripción (con filtro de entropía)
 - [ ] K: investigadores con personalidad y subasta
