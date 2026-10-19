@@ -142,3 +142,15 @@ Plan y issues: [issues.md](./issues.md) (#41–#50).
 - [x] Resumen de ausencia (métricas + eventos)
 - [x] UI: pestaña **Cuenta** (login, mis empresas, resumen, bitácora)
 - [x] Tests de usuarios y docs
+
+## Tecnología, investigación y jurisdicciones (diseño en docs/tecnologia.md)
+
+- [x] Contratos compartidos y PRNG con semilla (`domain/contratosTecnologia.ts`, `services/aleatorio.ts`)
+- [ ] H: ambiente con flujo y absorción (aire rápido, temperatura lenta)
+- [ ] I: tecnología (energía, procesamiento, burocracia) y patentes
+- [ ] J: valores de la empresa desde una descripción (con filtro de entropía)
+- [ ] K: investigadores con personalidad y subasta
+- [ ] L: leyes de tecnología y mudanza entre jurisdicciones
+- [ ] M: datacenters, alquiler de cómputo y pronóstico con drift
+- [ ] N: integración al ciclo, persistencia, GraphQL, UI y escenarios
+- [ ] O: IA que consume energía, burocracia como retraso y objetivo de empresa

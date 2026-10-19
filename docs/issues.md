@@ -147,3 +147,27 @@ G1 (autónoma)   G2 (eventos)   G3 ─► G4 ─► G5 ─► G6 ─► G7 ─�
 > El modelo de sector/objetivo (épica B) sigue en `docs/issues.md` y en el stash
 > `WIP B1: sector + catalogo` del branch anterior; acá las empresas de usuario todavía no
 > eligen sector.
+
+## Tecnología, investigación y jurisdicciones (diseño)
+
+Diseño completo y reglas de trabajo en paralelo: [tecnologia.md](./tecnologia.md).
+
+| Código | Épica | Estado |
+| ------ | ----- | ------ |
+| H | Ambiente: flujo y absorción | [ ] |
+| I | Tecnología y patentes (dominio puro) | [ ] |
+| J | Valores y descripción de empresa | [ ] |
+| K | Investigadores y subasta | [ ] |
+| L | Regulación y jurisdicciones (dominio) | [ ] |
+| M | Datacenters, cómputo y pronóstico | [ ] |
+| N | Integración: ciclo, SQLite, GraphQL, UI y escenarios | [ ] |
+| O | IA que consume energía, burocracia como retraso y objetivo de empresa (B2) | [ ] |
+
+```
+contratos ─┬─► I ─┐
+           ├─► J ─┤
+           ├─► K ─┼─► N ─► O
+           ├─► L ─┤
+           └─► M ─┘
+H ────────────────┘
+```

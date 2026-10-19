@@ -85,6 +85,7 @@ Detalle del modelo económico en [docs/economia.md](docs/economia.md).
 | [docs/economia.md](docs/economia.md)         | Modelo económico, simulación en vivo y predicción.                    |
 | [docs/api-y-ui.md](docs/api-y-ui.md)         | GraphQL, SSE en vivo, predicción, vistas de la UI y persistencia.     |
 | [docs/issues.md](docs/issues.md)             | Tablero de issues (simulación en vivo y modelo realista).             |
+| [docs/tecnologia.md](docs/tecnologia.md)     | Diseño de tecnología, investigadores, patentes y jurisdicciones.      |
 | [docs/roadmap.md](docs/roadmap.md)           | Checklist de mínimos, extras y pendientes.                            |
 
 ## Estado
